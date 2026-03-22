@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オフラインメモ</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; background-color: #f4f4f9; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        h1 { font-size: 1.2rem; margin: 0; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        button { padding: 8px 12px; border: none; border-radius: 5px; background-color: #007bff; color: white; cursor: pointer; font-size: 0.9rem; touch-action: manipulation; }
+        button:active { background-color: #0056b3; }
+        button.danger { background-color: #dc3545; }
+        button.danger:active { background-color: #a71d2a; }
+        textarea { flex-grow: 1; width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; resize: none; box-sizing: border-box; }
+        .toggle-container { display: flex; align-items: center; font-size: 0.9rem; }
+        .toggle-container input { margin-right: 5px; width: 18px; height: 18px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>オフラインメモ</h1>
+        <label class="toggle-container">
+            <input type="checkbox" id="saveToggle">
+            <span>保存する</span>
+        </label>
+    </header>
+
+    <div class="toolbar">
+        <button id="btnUndo">元に戻す (Undo)</button>
+        <button id="btnRedo">やり直し (Redo)</button>
+        <button id="btnCopyAll">全文コピー</button>
+        <button id="btnCopySel">選択コピー</button>
+        <button id="btnPaste">ペースト</button>
+        <button id="btnClear" class="danger">全文破棄</button>
+    </div>
+
+    <textarea id="memoArea" placeholder="ここにメモを入力..."></textarea>
+
+    <script>
+        const memoArea = document.getElementById('memoArea');
+        const saveToggle = document.getElementById('saveToggle');
+        
+        // --- 履歴管理 (Undo/Redo) ---
+        let history = [''];
+        let historyIndex = 0;
+        let isProgrammaticChange = false;
+
+        function saveState() {
+            if (isProgrammaticChange) return;
+            const text = memoArea.value;
+            if (text !== history[historyIndex]) {
+                history = history.slice(0, historyIndex + 1);
+                history.push(text);
+                historyIndex++;
+            }
+            saveToLocal();
+        }
+
+        memoArea.addEventListener('input', () => {
+            saveState();
+        });
+
+        document.getElementById('btnUndo').addEventListener('click', () => {
+            if (historyIndex > 0) {
+                historyIndex--;
+                updateTextarea(history[historyIndex]);
+            }
+        });
+
+        document.getElementById('btnRedo').addEventListener('click', () => {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                updateTextarea(history[historyIndex]);
+            }
+        });
+
+        function updateTextarea(text) {
+            isProgrammaticChange = true;
+            memoArea.value = text;
+            saveToLocal();
+            isProgrammaticChange = false;
+        }
+
+        // --- クリップボード操作 ---
+        document.getElementById('btnCopyAll').addEventListener('click', async () => {
+            await navigator.clipboard.writeText(memoArea.value);
+            alert('全文をコピーしました');
+        });
+
+        document.getElementById('btnCopySel').addEventListener('click', async () => {
+            const selectedText = memoArea.value.substring(memoArea.selectionStart, memoArea.selectionEnd);
+            if (selectedText) {
+                await navigator.clipboard.writeText(selectedText);
+                alert('選択部分をコピーしました');
+            } else {
+                alert('テキストが選択されていません');
+            }
+        });
+
+        document.getElementById('btnPaste').addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                const start = memoArea.selectionStart;
+                const end = memoArea.selectionEnd;
+                const currentText = memoArea.value;
+                memoArea.value = currentText.substring(0, start) + text + currentText.substring(end);
+                memoArea.selectionStart = memoArea.selectionEnd = start + text.length;
+                saveState(); // ペースト後に状態を保存
+            } catch (err) {
+                alert('ペーストに失敗しました。ブラウザの権限を確認してください。');
+            }
+        });
+
+        document.getElementById('btnClear').addEventListener('click', () => {
+            if (confirm('本当に全て破棄しますか？')) {
+                updateTextarea('');
+                history = [''];
+                historyIndex = 0;
+            }
+        });
+
+        // --- 保存機能 (LocalStorage) ---
+        function saveToLocal() {
+            if (saveToggle.checked) {
+                localStorage.setItem('memo_data', memoArea.value);
+            }
+        }
+
+        saveToggle.addEventListener('change', () => {
+            localStorage.setItem('memo_save_toggle', saveToggle.checked);
+            if (saveToggle.checked) {
+                saveToLocal();
+            } else {
+                localStorage.removeItem('memo_data');
+            }
+        });
+
+        // 初期化処理
+        window.addEventListener('DOMContentLoaded', () => {
+            const isSaveOn = localStorage.getItem('memo_save_toggle') === 'true';
+            saveToggle.checked = isSaveOn;
+            
+            if (isSaveOn) {
+                const savedText = localStorage.getItem('memo_data') || '';
+                memoArea.value = savedText;
+                history = [savedText];
+            }
+        });
+
+        // --- PWA (Service Worker) の登録 ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('ServiceWorker registered:', reg.scope);
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
