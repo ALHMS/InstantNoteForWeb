@@ -1,6 +1,6 @@
 {
-  "name": "オフラインメモ",
-  "short_name": "メモ",
+  "name": "InstantNote",
+  "short_name": "InstantNote",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",

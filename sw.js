@@ -1,5 +1,5 @@
 // 1. バージョン名を変更する（アップデートのたびに v2, v3... と変えていきます）
-const CACHE_NAME = 'memo-app-v3';
+const CACHE_NAME = 'memo-app-v4';
 const urlsToCache = [
   './',
   './index.html',

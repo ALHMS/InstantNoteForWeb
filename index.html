@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>InstantNote</title>
+    <title>オフラインメモ</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* --- 変数定義 (色の設定) --- */
@@ -11,14 +11,13 @@
             /* ライトモード (通常) */
             --bg-color: #ffffff;
             --header-bg-color: #f8f9fa;
-            --text-color: #333333; /* 濃いグレー */
+            --text-color: #333333;
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
             --btn-bg-color: #ffffff;
             --btn-active-bg-color: #e2e6ea;
-            --btn-primary-color: #007bff; /* 青 */
-            --btn-danger-color: #dc3545; /* 赤 */
+            --btn-danger-color: #dc3545;
             
             --toast-bg-color: rgba(50, 50, 50, 0.9);
             --toast-text-color: #ffffff;
@@ -38,8 +37,7 @@
 
                 --btn-bg-color: #161f27;
                 --btn-active-bg-color: #2a3b4c;
-                --btn-primary-color: #3399ff; /* 少し明るめの青 */
-                --btn-danger-color: #ff6b6b; /* 少し明るめの赤 */
+                --btn-danger-color: #ff6b6b;
 
                 --toast-bg-color: rgba(230, 241, 255, 0.95);
                 --toast-text-color: #10171d;
@@ -57,7 +55,7 @@
             overflow: hidden;
             background-color: var(--bg-color);
             color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s; /* モード切替をスムーズに */
+            transition: background-color 0.3s, color 0.3s;
         }
 
         /* --- ヘッダーとツールバー --- */
@@ -110,22 +108,20 @@
         /* --- ツールバーとアイコンボタン --- */
         .toolbar {
             display: flex;
-            gap: 8px; /* ボタン間の間隔 */
+            gap: 8px;
         }
 
         button {
-            /* ボタンを正方形に近づける */
             width: 40px;
             height: 40px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-
             border: 1px solid var(--border-color);
             border-radius: 8px;
             background-color: var(--btn-bg-color);
-            color: var(--text-color); /* これが重要：アイコンの色になる */
+            color: var(--text-color);
             cursor: pointer;
             touch-action: manipulation;
             transition: background-color 0.1s;
@@ -147,13 +143,9 @@
         /* --- CSS Maskによるアイコンの実装 --- */
         .icon {
             display: inline-block;
-            /* ユーザー要望：適切にサイズを変えて (16px -> 20px) */
             width: 20px;
             height: 20px;
-            /* アイコンの色を現在の文字色 (currentColor) にする魔法 */
             background-color: currentColor; 
-            
-            /* マスクの設定 (共通) */
             -webkit-mask-repeat: no-repeat;
             mask-repeat: no-repeat;
             -webkit-mask-position: center;
@@ -162,23 +154,10 @@
             mask-size: contain;
         }
 
-        /* 各ボタンのアイコンファイル指定 */
-        .icon-undo {
-            -webkit-mask-image: url('assets/undo.svg');
-            mask-image: url('assets/undo.svg');
-        }
-        .icon-redo {
-            -webkit-mask-image: url('assets/redo.svg');
-            mask-image: url('assets/redo.svg');
-        }
-        .icon-trash {
-            -webkit-mask-image: url('assets/trash.svg');
-            mask-image: url('assets/trash.svg');
-        }
-        .icon-copy {
-            -webkit-mask-image: url('assets/copy.svg');
-            mask-image: url('assets/copy.svg');
-        }
+        .icon-undo { -webkit-mask-image: url('assets/undo.svg'); mask-image: url('assets/undo.svg'); }
+        .icon-redo { -webkit-mask-image: url('assets/redo.svg'); mask-image: url('assets/redo.svg'); }
+        .icon-trash { -webkit-mask-image: url('assets/trash.svg'); mask-image: url('assets/trash.svg'); }
+        .icon-copy { -webkit-mask-image: url('assets/copy.svg'); mask-image: url('assets/copy.svg'); }
 
         /* --- テキストエリア (全画面) --- */
         #memoArea {
@@ -236,42 +215,204 @@
             <button id="btnRedo" title="やり直し"><span class="icon icon-redo"></span></button>
             <button id="btnClear" class="danger" title="全文破棄"><span class="icon icon-trash"></span></button>
             <button id="btnCopy" title="コピー"><span class="icon icon-copy"></span></button>
-        </div>
+            <button id="btnPaste" title="ペースト">貼付</button> </div>
     </div>
 
     <textarea id="memoArea" placeholder="ここにメモを入力..."></textarea>
     <div id="toast"></div>
 
     <script>
-        // ... (トースト、履歴管理、文字サイズ、LocalStorageのコードは前回と同じなので割愛) ...
-        // ※ただし、saveState()内の saveToLocal('text')、updateTextarea内の saveToLocal('text') はそのまま残してください。
+        const memoArea = document.getElementById('memoArea');
+        const saveToggle = document.getElementById('saveToggle');
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const toast = document.getElementById('toast');
+        
+        // --- トースト通知機能 ---
+        let toastTimer;
+        function showToast(message) {
+            clearTimeout(toastTimer);
+            toast.textContent = message;
+            toast.classList.add('show');
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
 
-        // --- クリップボード操作 (修正：統合コピー) ---
+        // --- 履歴管理 (Undo/Redo) ---
+        let history = [''];
+        let historyIndex = 0;
+        let isProgrammaticChange = false;
+
+        function saveState() {
+            if (isProgrammaticChange) return;
+            const text = memoArea.value;
+            if (text !== history[historyIndex]) {
+                history = history.slice(0, historyIndex + 1);
+                history.push(text);
+                historyIndex++;
+            }
+            saveToLocal('text');
+        }
+
+        memoArea.addEventListener('input', saveState);
+
+        document.getElementById('btnUndo').addEventListener('click', () => {
+            if (historyIndex > 0) {
+                historyIndex--;
+                updateTextarea(history[historyIndex]);
+            }
+            memoArea.focus();
+        });
+
+        document.getElementById('btnRedo').addEventListener('click', () => {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                updateTextarea(history[historyIndex]);
+            }
+            memoArea.focus();
+        });
+
+        function updateTextarea(text) {
+            isProgrammaticChange = true;
+            const start = memoArea.selectionStart;
+            const end = memoArea.selectionEnd;
+            memoArea.value = text;
+            saveToLocal('text');
+            memoArea.setSelectionRange(start, end);
+            isProgrammaticChange = false;
+        }
+
+        // --- 全文破棄 ---
+        document.getElementById('btnClear').addEventListener('click', () => {
+            if (memoArea.value === '') {
+                memoArea.focus();
+                return;
+            }
+            memoArea.value = '';
+            saveState(); 
+            showToast('全て破棄しました（Undoで元に戻せます）');
+            memoArea.focus();
+        });
+
+        // --- クリップボード操作 (統合コピー) ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
             const currentText = memoArea.value;
-
-            // ▼ ユーザー要望：選択されていれば部分、されていなければ全文 ▼
             const isTextSelected = start !== end;
             
-            if (isTextSelected) {
-                // 部分選択コピー
-                const selectedText = currentText.substring(start, end);
-                await navigator.clipboard.writeText(selectedText);
-                showToast('選択部分をコピーしました');
-                
-                // 選択範囲を維持してフォーカス
-                memoArea.focus();
-                memoArea.setSelectionRange(start, end);
-            } else {
-                // 全文コピー
-                await navigator.clipboard.writeText(currentText);
-                showToast('全文をコピーしました');
+            try {
+                if (isTextSelected) {
+                    const selectedText = currentText.substring(start, end);
+                    await navigator.clipboard.writeText(selectedText);
+                    showToast('選択部分をコピーしました');
+                    memoArea.focus();
+                    memoArea.setSelectionRange(start, end);
+                } else {
+                    await navigator.clipboard.writeText(currentText);
+                    showToast('全文をコピーしました');
+                    memoArea.focus();
+                }
+            } catch (err) {
+                showToast('コピーに失敗しました');
                 memoArea.focus();
             }
         });
 
+        // --- ペースト (iOSフォールバック対応) ---
+        document.getElementById('btnPaste').addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (!text) return;
+
+                const start = memoArea.selectionStart;
+                const end = memoArea.selectionEnd;
+                const currentText = memoArea.value;
+                
+                memoArea.value = currentText.substring(0, start) + text + currentText.substring(end);
+                
+                const newCursorPos = start + text.length;
+                memoArea.setSelectionRange(newCursorPos, newCursorPos);
+                
+                memoArea.focus();
+                saveState();
+                showToast('ペーストしました');
+                
+            } catch (err) {
+                const guideMessage = 
+                    "クリップボードへのアクセスがブロックされています。\n\n" +
+                    "【設定の変更方法】\n" +
+                    "1. アドレスバー（URLの横）のアイコンをタップ\n" +
+                    "2. 「Webサイトの設定」や「権限」を開く\n" +
+                    "3. クリップボードへのアクセスを「許可」に変更\n\n" +
+                    "※設定を変更せずにペーストする場合は、テキストエリアを長押しして標準の「ペースト」を選択してください。";
+                
+                alert(guideMessage);
+                memoArea.focus();
+            }
+        });
+
+        // --- 文字サイズ変更機能 ---
+        fontSizeSlider.addEventListener('input', (e) => {
+            const size = e.target.value;
+            memoArea.style.fontSize = size + 'px';
+            saveToLocal('settings');
+        });
+
+        // --- 保存機能 (LocalStorage) ---
+        function saveToLocal(type) {
+            localStorage.setItem('memo_save_toggle', saveToggle.checked);
+            
+            if (type === 'text' || type === 'all') {
+                if (saveToggle.checked) {
+                    localStorage.setItem('memo_data', memoArea.value);
+                }
+            }
+            
+            if (type === 'settings' || type === 'all') {
+                localStorage.setItem('memo_font_size', fontSizeSlider.value);
+            }
+        }
+
+        saveToggle.addEventListener('change', () => {
+            if (saveToggle.checked) {
+                showToast('自動保存をオンにしました');
+                saveToLocal('text');
+            } else {
+                showToast('自動保存をオフにし、データを破棄しました');
+                localStorage.removeItem('memo_data');
+            }
+            saveToLocal('settings');
+        });
+
+        // --- 初期化処理 (データ復元) ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const isSaveOn = localStorage.getItem('memo_save_toggle') === 'true';
+            saveToggle.checked = isSaveOn;
+
+            const savedFontSize = localStorage.getItem('memo_font_size') || '16';
+            fontSizeSlider.value = savedFontSize;
+            memoArea.style.fontSize = savedFontSize + 'px';
+            
+            if (isSaveOn) {
+                const savedText = localStorage.getItem('memo_data') || '';
+                memoArea.value = savedText;
+                history = [savedText];
+            }
+            
+            memoArea.focus();
+        });
+
+        // --- PWA (Service Worker) の登録 ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('ServiceWorker registered:', reg.scope);
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed:', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
