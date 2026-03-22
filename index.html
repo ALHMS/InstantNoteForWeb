@@ -286,39 +286,22 @@
             memoArea.setSelectionRange(start, end);
         });
 
-        document.getElementById('btnPaste').addEventListener('click', async () => {
-            try {
-                // ペースト前に現在のカーソル位置を記憶
-                const start = memoArea.selectionStart;
-                const end = memoArea.selectionEnd;
-                
-                const text = await navigator.clipboard.readText();
-                if (!text) return; // クリップボードが空なら何もしない
-
-                const currentText = memoArea.value;
-                // テキストを挿入
-                memoArea.value = currentText.substring(0, start) + text + currentText.substring(end);
-                
-                // ペーストしたテキストの直後にカーソルを移動
-                const newCursorPos = start + text.length;
-                memoArea.setSelectionRange(newCursorPos, newCursorPos);
-                
-                memoArea.focus(); // フォーカスを戻す
-                saveState(); // ペースト後に状態を保存
-                showToast('ペーストしました');
-            } catch (err) {
-                showToast('ペーストに失敗しました（権限を確認してください）');
-                memoArea.focus();
-            }
-        });
-
         document.getElementById('btnClear').addEventListener('click', () => {
-            if (confirm('本当に全て破棄しますか？')) {
-                updateTextarea('');
-                history = [''];
-                historyIndex = 0;
-                showToast('全て破棄しました');
+            // 現在テキストがすでに空なら何もしない
+            if (memoArea.value === '') {
+                memoArea.focus();
+                return;
             }
+
+            // 確認ダイアログを出さず、即座にテキストエリアを空にする
+            memoArea.value = '';
+            
+            // 「空になった」という状態を履歴（Undo用）に保存する
+            saveState(); 
+            
+            // トーストで「元に戻せる」ことをユーザーに軽く伝える
+            showToast('全て破棄しました');
+            
             memoArea.focus(); // カーソルを戻す
         });
 
