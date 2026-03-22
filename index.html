@@ -26,13 +26,10 @@
         /* --- ダークモード対応 (@media) --- */
         @media (prefers-color-scheme: dark) {
             :root {
-                /* 背景色：かなり濃いめの青 */
                 --bg-color: #10171d; 
                 --header-bg-color: #161f27;
                 --textarea-bg-color: #10171d;
                 --border-color: #2a3b4c;
-
-                /* テキスト：目が疲れない色 (少し青みがかった薄いグレー) */
                 --text-color: #e6f1ff; 
 
                 --btn-bg-color: #161f27;
@@ -131,7 +128,6 @@
             background-color: var(--btn-active-bg-color);
         }
 
-        /* 危険アクション (破棄) */
         button.danger {
             color: var(--btn-danger-color);
             border-color: var(--btn-danger-color);
@@ -158,6 +154,8 @@
         .icon-redo { -webkit-mask-image: url('assets/redo.svg'); mask-image: url('assets/redo.svg'); }
         .icon-trash { -webkit-mask-image: url('assets/trash.svg'); mask-image: url('assets/trash.svg'); }
         .icon-copy { -webkit-mask-image: url('assets/copy.svg'); mask-image: url('assets/copy.svg'); }
+        .icon-paste { -webkit-mask-image: url('assets/paste.svg'); mask-image: url('assets/paste.svg'); }
+        .icon-partial-select { -webkit-mask-image: url('assets/partial-select.svg'); mask-image: url('assets/partial-select.svg'); }
 
         /* --- テキストエリア (全画面) --- */
         #memoArea {
@@ -201,7 +199,7 @@
             <h1>メモ</h1>
             <div class="header-right">
                 <div class="font-size-control">
-                    <input type="range" id="fontSizeSlider" min="14" max="26" value="16" step="1">
+                    <input type="range" id="fontSizeSlider" min="14" max="48" value="24" step="1">
                 </div>
                 <label class="toggle-container">
                     <input type="checkbox" id="saveToggle">
@@ -215,10 +213,12 @@
             <button id="btnRedo" title="やり直し"><span class="icon icon-redo"></span></button>
             <button id="btnClear" class="danger" title="全文破棄"><span class="icon icon-trash"></span></button>
             <button id="btnCopy" title="コピー"><span class="icon icon-copy"></span></button>
-            <button id="btnPaste" title="ペースト">貼付</button> </div>
+            <button id="btnPaste" title="ペースト"><span class="icon icon-paste"></span></button>
+            <button id="btnPartialSelect" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
+        </div>
     </div>
 
-    <textarea id="memoArea" placeholder="ここにメモを入力..."></textarea>
+    <textarea id="memoArea" placeholder="ここにメモを入力..." autofocus></textarea>
     <div id="toast"></div>
 
     <script>
@@ -227,6 +227,14 @@
         const fontSizeSlider = document.getElementById('fontSizeSlider');
         const toast = document.getElementById('toast');
         
+        // --- モバイルでのUX向上（ボタン押下時にテキストエリアからフォーカスが外れるのを防ぐ）---
+        document.querySelectorAll('.toolbar button').forEach(btn => {
+            btn.addEventListener('mousedown', (e) => {
+                // デフォルトのフォーカス移動（キーボードが閉じるなどの挙動）を防ぎます
+                e.preventDefault(); 
+            });
+        });
+
         // --- トースト通知機能 ---
         let toastTimer;
         function showToast(message) {
@@ -352,6 +360,21 @@
             }
         });
 
+        // --- 部分選択（カーソル左側の拡張選択）機能 ---
+        document.getElementById('btnPartialSelect').addEventListener('click', () => {
+            const start = memoArea.selectionStart;
+            const end = memoArea.selectionEnd;
+            
+            // startが0より大きい（左側に文字がある）場合のみ左へ拡張する
+            if (start > 0) {
+                // start位置を1つ左へずらし、end位置はそのまま維持する
+                memoArea.setSelectionRange(start - 1, end);
+            }
+            
+            // 操作後に必ずフォーカスを戻して選択状態を明示する
+            memoArea.focus();
+        });
+
         // --- 文字サイズ変更機能 ---
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
@@ -385,12 +408,13 @@
             saveToLocal('settings');
         });
 
-        // --- 初期化処理 (データ復元) ---
+        // --- 初期化処理 (データ復元と自動フォーカス) ---
         window.addEventListener('DOMContentLoaded', () => {
             const isSaveOn = localStorage.getItem('memo_save_toggle') === 'true';
             saveToggle.checked = isSaveOn;
 
-            const savedFontSize = localStorage.getItem('memo_font_size') || '16';
+            // デフォルト文字サイズを24に拡張しました
+            const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
             memoArea.style.fontSize = savedFontSize + 'px';
             
@@ -400,6 +424,7 @@
                 history = [savedText];
             }
             
+            // ページを開いたときに確実にテキストエリアをアクティブにする
             memoArea.focus();
         });
 

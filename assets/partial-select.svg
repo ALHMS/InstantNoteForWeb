@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="151px" height="241px" viewBox="0 0 151 241">
+  <defs/>
+  <g>
+    <g data-cell-id="0">
+      <g data-cell-id="1">
+        <g data-cell-id="qcQNd2CgEtInOKsqhqvT-19">
+          <g/>
+          <g data-cell-id="qcQNd2CgEtInOKsqhqvT-16">
+            <g>
+              <path d="M 7 55 L 155 55 L 155 173 C 155 179.63 149.63 185 143 185 L -5 185 L -5 67 C -5 60.37 0.37 55 7 55 Z" fill="none" stroke="rgb(255, 255, 255)" stroke-width="4" stroke-miterlimit="10" transform="rotate(270,75,120)" pointer-events="all"/>
+            </g>
+          </g>
+          <g data-cell-id="qcQNd2CgEtInOKsqhqvT-2">
+            <g>
+              <path d="M 10 20 L 10 60" fill="none" stroke="rgb(255, 255, 255)" stroke-width="4" stroke-miterlimit="10" pointer-events="stroke"/>
+            </g>
+          </g>
+          <g data-cell-id="qcQNd2CgEtInOKsqhqvT-8">
+            <g>
+              <path d="M 7 55 L 155 55 L 155 173 C 155 179.63 149.63 185 143 185 L -5 185 L -5 67 C -5 60.37 0.37 55 7 55 Z" fill="none" stroke="rgb(255, 255, 255)" stroke-width="4" stroke-miterlimit="10" transform="rotate(270,75,120)" pointer-events="all"/>
+            </g>
+          </g>
+          <g data-cell-id="qcQNd2CgEtInOKsqhqvT-9">
+            <g>
+              <ellipse cx="10" cy="10" rx="10" ry="10" fill="rgb(255, 255, 255)" stroke="rgb(255, 255, 255)" pointer-events="all"/>
+            </g>
+          </g>
+          <g data-cell-id="qcQNd2CgEtInOKsqhqvT-15">
+            <g>
+              <path d="M 140 220 L 140 180" fill="none" stroke="rgb(255, 255, 255)" stroke-width="4" stroke-miterlimit="10" pointer-events="stroke"/>
+            </g>
+          </g>
+          <g data-cell-id="qcQNd2CgEtInOKsqhqvT-17">
+            <g>
+              <ellipse cx="140" cy="230" rx="10" ry="10" fill="rgb(255, 255, 255)" stroke="rgb(255, 255, 255)" pointer-events="all"/>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
