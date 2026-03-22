@@ -2,13 +2,12 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>オフラインメモ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <title>InstantNote</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* --- 変数定義 (色の設定) --- */
         :root {
-            /* ライトモード (通常) */
             --bg-color: #ffffff;
             --header-bg-color: #f8f9fa;
             --text-color: #333333;
@@ -23,7 +22,6 @@
             --toast-text-color: #ffffff;
         }
 
-        /* --- ダークモード対応 (@media) --- */
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #10171d; 
@@ -48,65 +46,69 @@
             padding: 0;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* --- ヘッダーとツールバー --- */
-        .controls-container {
+        /* --- ツールバー共通スタイル --- */
+        .toolbar {
             background-color: var(--header-bg-color);
-            border-bottom: 1px solid var(--border-color);
-            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
             box-sizing: border-box;
             flex-shrink: 0;
             z-index: 10;
         }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+        /* --- 上部ツールバー --- */
+        .top-toolbar {
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            white-space: nowrap;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .top-toolbar::-webkit-scrollbar {
+            display: none;
         }
 
-        h1 {
-            font-size: 1rem;
-            margin: 0;
-            font-weight: 600;
+        /* --- 下部ツールバー (キーボード直上) --- */
+        .bottom-toolbar {
+            border-top: 1px solid var(--border-color);
+            justify-content: flex-start;
         }
 
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        /* ツールバー内の区切り線 */
+        .divider {
+            width: 1px;
+            height: 24px;
+            background-color: var(--border-color);
+            margin: 0 4px;
+            flex-shrink: 0;
         }
 
-        /* 文字サイズ */
+        /* --- UIパーツ --- */
         .font-size-control {
             display: flex;
             align-items: center;
             gap: 4px;
-            font-size: 0.8rem;
+            flex-shrink: 0;
         }
-        #fontSizeSlider { width: 60px; cursor: pointer; }
+        #fontSizeSlider { width: 70px; cursor: pointer; }
 
-        /* 保存トグル */
         .toggle-container {
             display: flex;
             align-items: center;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             cursor: pointer;
+            flex-shrink: 0;
         }
-        .toggle-container input { margin: 0 4px 0 0; width: 14px; height: 14px; }
-
-        /* --- ツールバーとアイコンボタン --- */
-        .toolbar {
-            display: flex;
-            gap: 8px;
-        }
+        .toggle-container input { margin: 0 4px 0 0; width: 16px; height: 16px; }
 
         button {
             width: 40px;
@@ -120,23 +122,16 @@
             background-color: var(--btn-bg-color);
             color: var(--text-color);
             cursor: pointer;
+            flex-shrink: 0;
             touch-action: manipulation;
             transition: background-color 0.1s;
         }
 
-        button:active {
-            background-color: var(--btn-active-bg-color);
-        }
+        button:active { background-color: var(--btn-active-bg-color); }
+        button.danger { color: var(--btn-danger-color); border-color: var(--btn-danger-color); }
+        button.danger:active { background-color: rgba(255, 107, 107, 0.1); }
 
-        button.danger {
-            color: var(--btn-danger-color);
-            border-color: var(--btn-danger-color);
-        }
-        button.danger:active {
-            background-color: rgba(255, 107, 107, 0.1);
-        }
-
-        /* --- CSS Maskによるアイコンの実装 --- */
+        /* --- CSS Maskによるアイコン --- */
         .icon {
             display: inline-block;
             width: 20px;
@@ -169,13 +164,15 @@
             box-sizing: border-box;
             background-color: var(--textarea-bg-color);
             color: var(--text-color);
+            /* ▼ カーソルの色をテキストカラーと同じに設定 ▼ */
+            caret-color: var(--text-color);
             -webkit-overflow-scrolling: touch;
         }
 
         /* --- トースト通知 --- */
         #toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 70px;
             left: 50%;
             transform: translateX(-50%) translateY(100px);
             background-color: var(--toast-bg-color);
@@ -194,31 +191,30 @@
 </head>
 <body>
 
-    <div class="controls-container">
-        <header>
-            <h1>メモ</h1>
-            <div class="header-right">
-                <div class="font-size-control">
-                    <input type="range" id="fontSizeSlider" min="14" max="48" value="24" step="1">
-                </div>
-                <label class="toggle-container">
-                    <input type="checkbox" id="saveToggle">
-                    <span>保存</span>
-                </label>
-            </div>
-        </header>
-
-        <div class="toolbar">
-            <button id="btnUndo" title="元に戻す"><span class="icon icon-undo"></span></button>
-            <button id="btnRedo" title="やり直し"><span class="icon icon-redo"></span></button>
-            <button id="btnClear" class="danger" title="全文破棄"><span class="icon icon-trash"></span></button>
-            <button id="btnCopy" title="コピー"><span class="icon icon-copy"></span></button>
-            <button id="btnPaste" title="ペースト"><span class="icon icon-paste"></span></button>
-            <button id="btnPartialSelect" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
+    <div class="toolbar top-toolbar">
+        <button id="btnUndo" title="元に戻す"><span class="icon icon-undo"></span></button>
+        <button id="btnRedo" title="やり直し"><span class="icon icon-redo"></span></button>
+        <button id="btnClear" class="danger" title="全文破棄"><span class="icon icon-trash"></span></button>
+        <button id="btnCopy" title="コピー"><span class="icon icon-copy"></span></button>
+        <button id="btnPaste" title="ペースト"><span class="icon icon-paste"></span></button>
+        
+        <div class="divider"></div>
+        
+        <div class="font-size-control">
+            <input type="range" id="fontSizeSlider" min="14" max="48" value="24" step="1">
         </div>
+        <label class="toggle-container">
+            <input type="checkbox" id="saveToggle">
+            <span>保存</span>
+        </label>
     </div>
 
     <textarea id="memoArea" placeholder="ここにメモを入力..." autofocus></textarea>
+
+    <div class="toolbar bottom-toolbar">
+        <button id="btnPartialSelect" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
+    </div>
+
     <div id="toast"></div>
 
     <script>
@@ -227,15 +223,14 @@
         const fontSizeSlider = document.getElementById('fontSizeSlider');
         const toast = document.getElementById('toast');
         
-        // --- モバイルでのUX向上（ボタン押下時にテキストエリアからフォーカスが外れるのを防ぐ）---
-        document.querySelectorAll('.toolbar button').forEach(btn => {
-            btn.addEventListener('mousedown', (e) => {
-                // デフォルトのフォーカス移動（キーボードが閉じるなどの挙動）を防ぎます
-                e.preventDefault(); 
+        document.querySelectorAll('button, input[type="range"], input[type="checkbox"]').forEach(el => {
+            el.addEventListener('mousedown', (e) => {
+                if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                    e.preventDefault(); 
+                }
             });
         });
 
-        // --- トースト通知機能 ---
         let toastTimer;
         function showToast(message) {
             clearTimeout(toastTimer);
@@ -246,7 +241,6 @@
             }, 2500);
         }
 
-        // --- 履歴管理 (Undo/Redo) ---
         let history = [''];
         let historyIndex = 0;
         let isProgrammaticChange = false;
@@ -290,7 +284,6 @@
             isProgrammaticChange = false;
         }
 
-        // --- 全文破棄 ---
         document.getElementById('btnClear').addEventListener('click', () => {
             if (memoArea.value === '') {
                 memoArea.focus();
@@ -302,7 +295,6 @@
             memoArea.focus();
         });
 
-        // --- クリップボード操作 (統合コピー) ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -327,7 +319,6 @@
             }
         });
 
-        // --- ペースト (iOSフォールバック対応) ---
         document.getElementById('btnPaste').addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
@@ -360,29 +351,22 @@
             }
         });
 
-        // --- 部分選択（カーソル左側の拡張選択）機能 ---
         document.getElementById('btnPartialSelect').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
             
-            // startが0より大きい（左側に文字がある）場合のみ左へ拡張する
             if (start > 0) {
-                // start位置を1つ左へずらし、end位置はそのまま維持する
                 memoArea.setSelectionRange(start - 1, end);
             }
-            
-            // 操作後に必ずフォーカスを戻して選択状態を明示する
             memoArea.focus();
         });
 
-        // --- 文字サイズ変更機能 ---
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
             memoArea.style.fontSize = size + 'px';
             saveToLocal('settings');
         });
 
-        // --- 保存機能 (LocalStorage) ---
         function saveToLocal(type) {
             localStorage.setItem('memo_save_toggle', saveToggle.checked);
             
@@ -408,12 +392,10 @@
             saveToLocal('settings');
         });
 
-        // --- 初期化処理 (データ復元と自動フォーカス) ---
         window.addEventListener('DOMContentLoaded', () => {
             const isSaveOn = localStorage.getItem('memo_save_toggle') === 'true';
             saveToggle.checked = isSaveOn;
 
-            // デフォルト文字サイズを24に拡張しました
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
             memoArea.style.fontSize = savedFontSize + 'px';
@@ -424,11 +406,9 @@
                 history = [savedText];
             }
             
-            // ページを開いたときに確実にテキストエリアをアクティブにする
             memoArea.focus();
         });
 
-        // --- PWA (Service Worker) の登録 ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
