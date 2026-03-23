@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>InstantNote</title>
+    <title>オフラインメモ</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* --- 変数定義 (色の設定) --- */
@@ -77,10 +77,16 @@
             display: none;
         }
 
-        /* --- 下部ツールバー (キーボード直上) --- */
+        /* --- ▼ 下部ツールバー (Safari対策で position: fixed に変更) ▼ --- */
         .bottom-toolbar {
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            /* キーボードが出た時のアニメーションを滑らかにする */
+            transition: bottom 0.1s ease-out; 
         }
 
         /* ツールバー内の区切り線 */
@@ -156,7 +162,8 @@
         #memoArea {
             flex-grow: 1;
             width: 100%;
-            padding: 15px;
+            /* ▼ 下部ツールバーにテキストが隠れないように padding-bottom を追加 ▼ */
+            padding: 15px 15px 70px 15px;
             font-family: inherit;
             border: none;
             outline: none;
@@ -164,7 +171,6 @@
             box-sizing: border-box;
             background-color: var(--textarea-bg-color);
             color: var(--text-color);
-            /* ▼ カーソルの色をテキストカラーと同じに設定 ▼ */
             caret-color: var(--text-color);
             -webkit-overflow-scrolling: touch;
         }
@@ -181,7 +187,7 @@
             border-radius: 20px;
             font-size: 0.85rem;
             z-index: 1000;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out, bottom 0.1s ease-out;
             opacity: 0;
             pointer-events: none;
             white-space: nowrap;
@@ -222,7 +228,30 @@
         const saveToggle = document.getElementById('saveToggle');
         const fontSizeSlider = document.getElementById('fontSizeSlider');
         const toast = document.getElementById('toast');
+        const bottomToolbar = document.querySelector('.bottom-toolbar');
         
+        // --- ▼ iOS Safari用：キーボードへの完璧な追従処理 (Visual Viewport API) ▼ ---
+        if (window.visualViewport) {
+            const adjustToolbarPosition = () => {
+                // 画面全体の高さから、実際に見えている領域(キーボードを除いた部分)の高さを引く
+                // offsetTopを加味することで、Safari特有のスクロールバウンス時のズレも補正します
+                const offsetBottom = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+                const bottomVal = Math.max(0, offsetBottom);
+                
+                // 下部ツールバーとトーストをキーボードの高さ分だけ持ち上げる
+                bottomToolbar.style.bottom = `${bottomVal}px`;
+                toast.style.bottom = `${bottomVal + 70}px`;
+            };
+
+            // キーボードの出現(resize)や、スクロール(scroll)に合わせてリアルタイムに位置を更新
+            window.visualViewport.addEventListener('resize', adjustToolbarPosition);
+            window.visualViewport.addEventListener('scroll', adjustToolbarPosition);
+            
+            // 初期状態の計算
+            adjustToolbarPosition();
+        }
+        // --- ▲ ここまで ▲ ---
+
         document.querySelectorAll('button, input[type="range"], input[type="checkbox"]').forEach(el => {
             el.addEventListener('mousedown', (e) => {
                 if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {

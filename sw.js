@@ -1,5 +1,5 @@
-// ▼ バージョンを v6 に引き上げました ▼
-const CACHE_NAME = 'memo-app-v6';
+// ▼ バージョンを v7 に引き上げました ▼
+const CACHE_NAME = 'memo-app-v7';
 
 // オフライン動作用に保存するファイルのリスト
 const urlsToCache = [
