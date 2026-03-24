@@ -3,25 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>オフラインメモ</title>
+    <title>InstantNote</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* --- 変数定義 (色の設定) --- */
         :root {
             --bg-color: #ffffff;
-            --header-bg-color: #f8f9fa;
-            /* ▼ 下部ツールバー用の半透明背景色（ライトモード） ▼ */
-            --bottom-toolbar-bg: rgba(248, 249, 250, 0.85);
             --text-color: #333333;
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
-            --btn-bg-color: #ffffff;
-            --btn-active-bg-color: #e2e6ea;
-            --btn-danger-color: #dc3545;
+            /* ▼ すりガラス（半透明）用の背景色（ライトモード） ▼ */
+            --toolbar-bg-transparent: rgba(248, 249, 250, 0.85);
+            --tab-bg-transparent: rgba(226, 230, 234, 0.65);
             
-            --tab-bg: #e2e6ea;
-            --tab-active-bg: #ffffff;
+            --btn-active-bg-color: rgba(0, 0, 0, 0.05);
+            --btn-danger-color: #dc3545;
             
             --toast-bg-color: rgba(50, 50, 50, 0.9);
             --toast-text-color: #ffffff;
@@ -30,19 +27,16 @@
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #10171d; 
-                --header-bg-color: #161f27;
-                /* ▼ 下部ツールバー用の半透明背景色（ダークモード） ▼ */
-                --bottom-toolbar-bg: rgba(22, 31, 39, 0.85);
                 --textarea-bg-color: #10171d;
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
 
-                --btn-bg-color: #161f27;
-                --btn-active-bg-color: #2a3b4c;
-                --btn-danger-color: #ff6b6b;
+                /* ▼ すりガラス（半透明）用の背景色（ダークモード） ▼ */
+                --toolbar-bg-transparent: rgba(22, 31, 39, 0.85);
+                --tab-bg-transparent: rgba(13, 18, 23, 0.65);
 
-                --tab-bg: #0d1217;
-                --tab-active-bg: #161f27;
+                --btn-active-bg-color: rgba(255, 255, 255, 0.1);
+                --btn-danger-color: #ff6b6b;
 
                 --toast-bg-color: rgba(230, 241, 255, 0.95);
                 --toast-text-color: #10171d;
@@ -63,11 +57,24 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* --- タブバー --- */
+        /* --- 上部固定コンテナ（タブ + ツールバー） --- */
+        .top-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- タブバー (半透明) --- */
         .tab-bar {
             display: flex;
-            background-color: var(--tab-bg);
-            padding: 6px 6px 0 6px; /* 下部以外に余白 */
+            background-color: var(--tab-bg-transparent);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 6px 6px 0 6px;
             gap: 4px;
             flex-shrink: 0;
             overflow-x: auto;
@@ -83,7 +90,7 @@
             background-color: transparent;
             color: var(--text-color);
             border: none;
-            border-radius: 8px 8px 0 0; /* 上の角だけ丸く */
+            border-radius: 8px 8px 0 0;
             font-size: 0.9rem;
             font-weight: bold;
             cursor: pointer;
@@ -93,26 +100,26 @@
             white-space: nowrap;
         }
         .tab.active {
-            background-color: var(--tab-active-bg);
+            background-color: var(--toolbar-bg-transparent); /* ツールバーと同色にして一体化 */
             opacity: 1;
         }
 
-        /* --- ツールバー共通スタイル --- */
+        /* --- ツールバー共通 (半透明) --- */
         .toolbar {
-            background-color: var(--header-bg-color);
+            background-color: var(--toolbar-bg-transparent);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             gap: 10px;
             padding: 8px 10px;
             box-sizing: border-box;
             flex-shrink: 0;
-            z-index: 10;
         }
 
         /* --- 上部ツールバー --- */
         .top-toolbar {
             border-bottom: 1px solid var(--border-color);
-            background-color: var(--tab-active-bg); /* アクティブタブと色を合わせる */
             overflow-x: auto;
             white-space: nowrap;
             -ms-overflow-style: none;
@@ -120,7 +127,7 @@
         }
         .top-toolbar::-webkit-scrollbar { display: none; }
 
-        /* --- 下部ツールバー (半透明すりガラス仕様) --- */
+        /* --- 下部ツールバー --- */
         .bottom-toolbar {
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
@@ -128,20 +135,8 @@
             bottom: 0;
             left: 0;
             width: 100%;
+            z-index: 20;
             transition: bottom 0.1s ease-out; 
-            
-            /* ▼ 背景を半透明にし、すりガラス効果（ブラー）を適用 ▼ */
-            background-color: var(--bottom-toolbar-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        /* すりガラス上のボタンは背景を完全に透明にして馴染ませる */
-        .bottom-toolbar button {
-            background-color: transparent;
-            border-color: transparent;
-        }
-        .bottom-toolbar button:active {
-            background-color: var(--btn-active-bg-color);
         }
 
         .divider {
@@ -166,9 +161,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--border-color);
+            border: 1px solid transparent; /* すりガラス上では枠線を消して馴染ませる */
             border-radius: 8px;
-            background-color: var(--btn-bg-color);
+            background-color: transparent;
             color: var(--text-color);
             cursor: pointer;
             flex-shrink: 0;
@@ -177,7 +172,7 @@
         }
 
         button.tool-btn:active { background-color: var(--btn-active-bg-color); }
-        button.tool-btn.danger { color: var(--btn-danger-color); border-color: var(--btn-danger-color); }
+        button.tool-btn.danger { color: var(--btn-danger-color); }
         button.tool-btn.danger:active { background-color: rgba(255, 107, 107, 0.1); }
 
         /* --- CSS Maskによるアイコン --- */
@@ -205,13 +200,14 @@
         #memoArea {
             flex-grow: 1;
             width: 100%;
-            padding: 15px 15px 70px 15px;
+            /* ▼ 文字が上下の固定ツールバーの裏側に潜り込めるように余白を確保 ▼ */
+            padding: 100px 15px 70px 15px;
             font-family: inherit;
             border: none;
             outline: none;
             resize: none;
             box-sizing: border-box;
-            background-color: var(--textarea-bg-color);
+            background-color: transparent; /* 背景を透明にしてbodyの色を反映 */
             color: var(--text-color);
             caret-color: var(--text-color);
             -webkit-overflow-scrolling: touch;
@@ -239,33 +235,35 @@
 </head>
 <body>
 
-    <div class="tab-bar" id="tabBar">
-        <button class="tab active" data-tab="1">メモ 1</button>
-        <button class="tab" data-tab="2">メモ 2</button>
-        <button class="tab" data-tab="3">メモ 3</button>
-    </div>
-
-    <div class="toolbar top-toolbar">
-        <button id="btnUndo" class="tool-btn" title="元に戻す"><span class="icon icon-undo"></span></button>
-        <button id="btnRedo" class="tool-btn" title="やり直し"><span class="icon icon-redo"></span></button>
-        <button id="btnClear" class="tool-btn danger" title="全文破棄"><span class="icon icon-trash"></span></button>
-        <button id="btnCopy" class="tool-btn" title="コピー"><span class="icon icon-copy"></span></button>
-        <button id="btnPaste" class="tool-btn" title="ペースト"><span class="icon icon-paste"></span></button>
-        
-        <div class="divider"></div>
-        
-        <div class="font-size-control">
-            <input type="range" id="fontSizeSlider" min="14" max="48" value="24" step="1">
+    <div class="top-container">
+        <div class="tab-bar" id="tabBar">
+            <button class="tab active" data-tab="1">Note 1</button>
+            <button class="tab" data-tab="2">Note 2</button>
+            <button class="tab" data-tab="3">Note 3</button>
         </div>
-        <label class="toggle-container">
-            <input type="checkbox" id="saveToggle">
-            <span>保存</span>
-        </label>
+
+        <div class="toolbar top-toolbar">
+            <button id="btnUndo" class="tool-btn" title="元に戻す"><span class="icon icon-undo"></span></button>
+            <button id="btnRedo" class="tool-btn" title="やり直し"><span class="icon icon-redo"></span></button>
+            <button id="btnClear" class="tool-btn danger" title="全文破棄"><span class="icon icon-trash"></span></button>
+            
+            <div class="divider"></div>
+            
+            <div class="font-size-control">
+                <input type="range" id="fontSizeSlider" min="14" max="48" value="24" step="1">
+            </div>
+            <label class="toggle-container">
+                <input type="checkbox" id="saveToggle">
+                <span>保存</span>
+            </label>
+        </div>
     </div>
 
     <textarea id="memoArea" placeholder="ここにメモを入力..." autofocus></textarea>
 
     <div class="toolbar bottom-toolbar">
+        <button id="btnCopy" class="tool-btn" title="コピー"><span class="icon icon-copy"></span></button>
+        <button id="btnPaste" class="tool-btn" title="ペースト"><span class="icon icon-paste"></span></button>
         <button id="btnPartialSelect" class="tool-btn" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
     </div>
 
@@ -279,9 +277,7 @@
         const bottomToolbar = document.querySelector('.bottom-toolbar');
         const tabs = document.querySelectorAll('.tab');
         
-        // --- ▼ タブと履歴のデータ管理 ▼ ---
         let currentTab = 1;
-        // 3つのタブそれぞれの履歴状態を保持するオブジェクト
         let tabData = {
             1: { history: [''], index: 0 },
             2: { history: [''], index: 0 },
@@ -326,21 +322,17 @@
         tabs.forEach(tab => {
             tab.addEventListener('click', (e) => {
                 const targetTab = parseInt(e.target.dataset.tab);
-                if (targetTab === currentTab) return; // 同じタブなら何もしない
+                if (targetTab === currentTab) return;
 
-                // UIの切り替え
                 tabs.forEach(t => t.classList.remove('active'));
                 e.target.classList.add('active');
 
-                // 現在のタブ状態を更新
                 currentTab = targetTab;
                 localStorage.setItem('memo_active_tab', currentTab);
 
-                // そのタブの保存設定を読み込む
                 const isSaveOn = localStorage.getItem(`memo_save_toggle_${currentTab}`) === 'true';
                 saveToggle.checked = isSaveOn;
 
-                // そのタブのテキスト（履歴の最新）を読み込む
                 isProgrammaticChange = true;
                 memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
                 isProgrammaticChange = false;
@@ -405,7 +397,7 @@
             memoArea.focus();
         });
 
-        // --- コピー ---
+        // --- コピー (下部ツールバーに移動) ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -430,7 +422,7 @@
             }
         });
 
-        // --- ペースト ---
+        // --- ペースト (下部ツールバーに移動) ---
         document.getElementById('btnPaste').addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
@@ -483,7 +475,6 @@
 
         // --- ローカルストレージへの保存 ---
         function saveToLocal(type) {
-            // トグルの状態は現在のタブIDに紐づけて保存
             localStorage.setItem(`memo_save_toggle_${currentTab}`, saveToggle.checked);
             
             if (type === 'text' || type === 'all') {
@@ -510,14 +501,12 @@
             saveToLocal('settings');
         });
 
-        // --- アプリ初期化 ---
+        // --- ▼ アプリ初期化 (フォーカス処理を修正) ▼ ---
         window.addEventListener('DOMContentLoaded', () => {
-            // 1. 文字サイズ設定の復元
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
             memoArea.style.fontSize = savedFontSize + 'px';
 
-            // 2. 3つのタブすべての保存データをメモリ(tabData)に読み込む
             for(let i = 1; i <= 3; i++) {
                 const isSaveOn = localStorage.getItem(`memo_save_toggle_${i}`) === 'true';
                 if (isSaveOn) {
@@ -526,19 +515,22 @@
                 }
             }
 
-            // 3. 前回開いていたタブを復元（なければ1）
             currentTab = parseInt(localStorage.getItem('memo_active_tab')) || 1;
             
-            // UIを現在のタブに合わせる
             tabs.forEach(t => t.classList.toggle('active', parseInt(t.dataset.tab) === currentTab));
             
             const isSaveOn = localStorage.getItem(`memo_save_toggle_${currentTab}`) === 'true';
             saveToggle.checked = isSaveOn;
             
-            // テキストエリアに現在のタブの内容を反映
             memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
             
-            memoArea.focus();
+            // 値をセットした直後にフォーカスが飛ぶのを防ぐため、非同期（遅延）で確実にフォーカスを当てる
+            setTimeout(() => {
+                memoArea.focus();
+                // 必要であれば、カーソルを一番最後に移動させる
+                const len = memoArea.value.length;
+                memoArea.setSelectionRange(len, len);
+            }, 100);
         });
 
         // --- Service Worker 登録 ---
