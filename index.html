@@ -13,9 +13,9 @@
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
-            /* ▼ 90%透明 (アルファ値 0.1) に設定。デバッグや透け感の確認に最適です ▼ */
-            --toolbar-bg-transparent: rgba(248, 249, 250, 0.1);
-            --tab-bg-transparent: rgba(226, 230, 234, 0.1);
+            /* ▼ 透明度20% (不透明度80% = アルファ値 0.8) に調整 ▼ */
+            --toolbar-bg-transparent: rgba(248, 249, 250, 0.8);
+            --tab-bg-transparent: rgba(226, 230, 234, 0.8);
             
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
@@ -31,9 +31,9 @@
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
 
-                /* ▼ ダークモードも90%透明に ▼ */
-                --toolbar-bg-transparent: rgba(22, 31, 39, 0.1);
-                --tab-bg-transparent: rgba(13, 18, 23, 0.1);
+                /* ▼ ダークモードも透明度20%に調整 ▼ */
+                --toolbar-bg-transparent: rgba(22, 31, 39, 0.8);
+                --tab-bg-transparent: rgba(13, 18, 23, 0.8);
 
                 --btn-active-bg-color: rgba(255, 255, 255, 0.1);
                 --btn-danger-color: #ff6b6b;
@@ -72,10 +72,11 @@
         .tab-bar {
             display: flex;
             background-color: var(--tab-bg-transparent);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            /* ▼ 高さ減: paddingを極限まで削減 ▼ */
-            padding: 4px 4px 0 4px;
+            /* ▼ ブラー(ぼかし)を1pxに変更 ▼ */
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
+            /* ▼ パディングyを0に設定 ▼ */
+            padding: 0 4px 0 4px;
             gap: 4px;
             flex-shrink: 0;
             overflow-x: auto;
@@ -87,9 +88,9 @@
         .tab {
             flex: 1;
             max-width: 120px;
-            /* ▼ 高さ減: 余白とフォントサイズを縮小 ▼ */
-            padding: 5px 10px;
-            font-size: 0.8rem;
+            /* タブも高さを抑えつつ押しやすく調整 */
+            padding: 8px 10px;
+            font-size: 0.85rem;
             background-color: transparent;
             color: var(--text-color);
             border: none;
@@ -109,13 +110,14 @@
         /* --- ツールバー共通 --- */
         .toolbar {
             background-color: var(--toolbar-bg-transparent);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            /* ▼ ブラー(ぼかし)を1pxに変更 ▼ */
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
             display: flex;
             align-items: center;
-            /* ▼ 高さ減: gapとpaddingを削減 ▼ */
             gap: 8px;
-            padding: 4px 6px;
+            /* ▼ パディングyを0pxに設定し、高さをボタンサイズに依存させる ▼ */
+            padding: 0 8px;
             box-sizing: border-box;
             flex-shrink: 0;
         }
@@ -139,7 +141,6 @@
             left: 0;
             width: 100%;
             z-index: 20;
-            /* JSでのtop移動がカクつかないよう、位置プロパティのtransitionは外す。opacityのみアニメーション化 */
             transition: opacity 0.25s ease-in-out;
         }
 
@@ -151,8 +152,7 @@
 
         .divider {
             width: 1px;
-            /* ▼ 高さ減: 区切り線を短く ▼ */
-            height: 16px;
+            height: 24px;
             background-color: var(--border-color);
             margin: 0 4px;
             flex-shrink: 0;
@@ -160,16 +160,15 @@
 
         /* --- UIパーツ --- */
         .font-size-control { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-        /* ▼ 高さ減: スライダー幅を短く ▼ */
-        #fontSizeSlider { width: 50px; cursor: pointer; }
+        #fontSizeSlider { width: 60px; cursor: pointer; }
 
         .toggle-container { display: flex; align-items: center; font-size: 0.8rem; cursor: pointer; flex-shrink: 0; }
         .toggle-container input { margin: 0 4px 0 0; width: 14px; height: 14px; }
 
         button.tool-btn {
-            /* ▼ 高さ減: ボタンサイズを 40px -> 30px に縮小 (-25%) ▼ */
-            width: 30px;
-            height: 30px;
+            /* ▼ ボタンサイズを元の40pxに戻す ▼ */
+            width: 40px;
+            height: 40px;
             padding: 0;
             display: flex;
             align-items: center;
@@ -191,9 +190,9 @@
         /* --- CSS Maskによるアイコン --- */
         .icon {
             display: inline-block;
-            /* ▼ 高さ減: アイコンサイズを 20px -> 16px に縮小 ▼ */
-            width: 16px;
-            height: 16px;
+            /* ▼ アイコンサイズを元の20pxに戻す ▼ */
+            width: 20px;
+            height: 20px;
             background-color: currentColor; 
             -webkit-mask-repeat: no-repeat;
             mask-repeat: no-repeat;
@@ -214,8 +213,8 @@
         #memoArea {
             flex-grow: 1;
             width: 100%;
-            /* 上下ツールバーのスリム化に合わせて余白を調整 (上約70px、下約50px) */
-            padding: 70px 15px 50px 15px;
+            /* ツールバーの高さ（パディング0・ボタン40px）に合わせて余白を再計算 (上約75px、下約50px) */
+            padding: 75px 15px 50px 15px;
             font-family: inherit;
             border: none;
             outline: none;
@@ -238,7 +237,6 @@
             border-radius: 20px;
             font-size: 0.85rem;
             z-index: 1000;
-            /* Y軸移動のアニメーションを外してチラつき防止。opacityのみにする */
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
@@ -303,20 +301,20 @@
         };
         let isProgrammaticChange = false;
 
-        // --- ▼ Safariのスクロールバグを防ぎ、全ブラウザでフェードする完璧なキーボード追従 ▼ ---
+        // --- iOS Safari/モダンブラウザ用：フェードするキーボード追従 ---
         if (window.visualViewport) {
             let lastViewportHeight = window.visualViewport.height;
             let resizeTimer;
 
             const adjustToolbarPosition = () => {
                 const vv = window.visualViewport;
-                const tbHeight = bottomToolbar.offsetHeight || 38; 
+                // パディングを0にしたため、ツールバーの高さはボタン(40px)＋ボーダー等で約41pxになります
+                const tbHeight = bottomToolbar.offsetHeight || 41; 
                 
-                // Safari対策：画面のbottomではなく、「見えている領域の絶対的な上部からの距離(top)」を計算して配置する
                 const topVal = vv.offsetTop + vv.height - tbHeight;
                 
-                bottomToolbar.style.bottom = 'auto'; // bottom指定を無効化
-                bottomToolbar.style.top = `${topVal}px`; // 絶対的なtop位置に固定
+                bottomToolbar.style.bottom = 'auto'; 
+                bottomToolbar.style.top = `${topVal}px`; 
                 
                 toast.style.bottom = 'auto';
                 toast.style.top = `${topVal - 60}px`;
@@ -325,13 +323,10 @@
             window.visualViewport.addEventListener('resize', () => {
                 const currentHeight = window.visualViewport.height;
                 
-                // キーボードの開閉を検知 (高さが大きく変わった時)
                 if (Math.abs(currentHeight - lastViewportHeight) > 40) {
-                    // 即座にフェードアウト
                     bottomToolbar.classList.add('fade-out');
                     toast.classList.add('fade-out');
                     
-                    // アニメーションが落ち着く頃(約350ms後)に裏側で移動完了したものをフェードイン
                     clearTimeout(resizeTimer);
                     resizeTimer = setTimeout(() => {
                         bottomToolbar.classList.remove('fade-out');
@@ -342,10 +337,8 @@
                 adjustToolbarPosition();
             });
 
-            // スクロール時（Safariのバウンス等）はフェードさせず位置のみ追従
             window.visualViewport.addEventListener('scroll', adjustToolbarPosition);
             
-            // 初期化（要素レンダリング待ち）
             setTimeout(adjustToolbarPosition, 100);
         }
 
