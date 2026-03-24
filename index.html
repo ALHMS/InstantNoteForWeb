@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>InstantNote</title>
+    <title>オフラインメモ</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* --- 変数定義 (色の設定) --- */
@@ -13,9 +13,9 @@
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
-            /* ▼ すりガラス（半透明）用の背景色（ライトモード） ▼ */
-            --toolbar-bg-transparent: rgba(248, 249, 250, 0.85);
-            --tab-bg-transparent: rgba(226, 230, 234, 0.65);
+            /* ▼ すりガラスの透明度を上げて（0.85 -> 0.6）裏側をハッキリ透けさせる ▼ */
+            --toolbar-bg-transparent: rgba(248, 249, 250, 0.6);
+            --tab-bg-transparent: rgba(226, 230, 234, 0.5);
             
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
@@ -31,9 +31,9 @@
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
 
-                /* ▼ すりガラス（半透明）用の背景色（ダークモード） ▼ */
-                --toolbar-bg-transparent: rgba(22, 31, 39, 0.85);
-                --tab-bg-transparent: rgba(13, 18, 23, 0.65);
+                /* ▼ ダークモードのすりガラス透明度も上げる ▼ */
+                --toolbar-bg-transparent: rgba(22, 31, 39, 0.6);
+                --tab-bg-transparent: rgba(13, 18, 23, 0.5);
 
                 --btn-active-bg-color: rgba(255, 255, 255, 0.1);
                 --btn-danger-color: #ff6b6b;
@@ -57,7 +57,7 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* --- 上部固定コンテナ（タブ + ツールバー） --- */
+        /* --- 上部固定コンテナ --- */
         .top-container {
             position: fixed;
             top: 0;
@@ -68,13 +68,14 @@
             flex-direction: column;
         }
 
-        /* --- タブバー (半透明) --- */
+        /* --- タブバー --- */
         .tab-bar {
             display: flex;
             background-color: var(--tab-bg-transparent);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 6px 6px 0 6px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            /* 高さ15%減: paddingを調整 */
+            padding: 5px 5px 0 5px;
             gap: 4px;
             flex-shrink: 0;
             overflow-x: auto;
@@ -86,12 +87,12 @@
         .tab {
             flex: 1;
             max-width: 120px;
-            padding: 8px 12px;
+            padding: 6px 10px; /* 少しコンパクトに */
             background-color: transparent;
             color: var(--text-color);
             border: none;
             border-radius: 8px 8px 0 0;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: bold;
             cursor: pointer;
             opacity: 0.6;
@@ -100,19 +101,20 @@
             white-space: nowrap;
         }
         .tab.active {
-            background-color: var(--toolbar-bg-transparent); /* ツールバーと同色にして一体化 */
+            background-color: var(--toolbar-bg-transparent);
             opacity: 1;
         }
 
-        /* --- ツールバー共通 (半透明) --- */
+        /* --- ツールバー共通 --- */
         .toolbar {
             background-color: var(--toolbar-bg-transparent);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px 10px;
+            /* 高さ15%減: paddingを調整 */
+            padding: 6px 8px;
             box-sizing: border-box;
             flex-shrink: 0;
         }
@@ -136,12 +138,19 @@
             left: 0;
             width: 100%;
             z-index: 20;
-            transition: bottom 0.1s ease-out; 
+            /* ▼ 位置移動(bottom)のアニメーションを消し、透明度(opacity)のアニメーションに変更 ▼ */
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        /* フェードアウト用のクラス */
+        .fade-out {
+            opacity: 0 !important;
+            pointer-events: none;
         }
 
         .divider {
             width: 1px;
-            height: 24px;
+            height: 20px; /* 少し短く */
             background-color: var(--border-color);
             margin: 0 4px;
             flex-shrink: 0;
@@ -149,20 +158,21 @@
 
         /* --- UIパーツ --- */
         .font-size-control { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-        #fontSizeSlider { width: 70px; cursor: pointer; }
+        #fontSizeSlider { width: 60px; cursor: pointer; } /* 少し短く */
 
-        .toggle-container { display: flex; align-items: center; font-size: 0.85rem; cursor: pointer; flex-shrink: 0; }
-        .toggle-container input { margin: 0 4px 0 0; width: 16px; height: 16px; }
+        .toggle-container { display: flex; align-items: center; font-size: 0.8rem; cursor: pointer; flex-shrink: 0; }
+        .toggle-container input { margin: 0 4px 0 0; width: 14px; height: 14px; }
 
         button.tool-btn {
-            width: 40px;
-            height: 40px;
+            /* 高さ15%減: ボタンサイズを 40px -> 34px に縮小 */
+            width: 34px;
+            height: 34px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid transparent; /* すりガラス上では枠線を消して馴染ませる */
-            border-radius: 8px;
+            border: 1px solid transparent;
+            border-radius: 6px;
             background-color: transparent;
             color: var(--text-color);
             cursor: pointer;
@@ -178,8 +188,9 @@
         /* --- CSS Maskによるアイコン --- */
         .icon {
             display: inline-block;
-            width: 20px;
-            height: 20px;
+            /* 高さ15%減: アイコンサイズを 20px -> 18px に縮小 */
+            width: 18px;
+            height: 18px;
             background-color: currentColor; 
             -webkit-mask-repeat: no-repeat;
             mask-repeat: no-repeat;
@@ -200,14 +211,14 @@
         #memoArea {
             flex-grow: 1;
             width: 100%;
-            /* ▼ 文字が上下の固定ツールバーの裏側に潜り込めるように余白を確保 ▼ */
-            padding: 100px 15px 70px 15px;
+            /* 上部が約70px、下部が約47pxになったため余白を調整 */
+            padding: 85px 15px 60px 15px;
             font-family: inherit;
             border: none;
             outline: none;
             resize: none;
             box-sizing: border-box;
-            background-color: transparent; /* 背景を透明にしてbodyの色を反映 */
+            background-color: transparent;
             color: var(--text-color);
             caret-color: var(--text-color);
             -webkit-overflow-scrolling: touch;
@@ -216,7 +227,7 @@
         /* --- トースト通知 --- */
         #toast {
             position: fixed;
-            bottom: 70px;
+            bottom: 60px; /* ツールバーの高さに合わせて調整 */
             left: 50%;
             transform: translateX(-50%) translateY(100px);
             background-color: var(--toast-bg-color);
@@ -225,7 +236,7 @@
             border-radius: 20px;
             font-size: 0.85rem;
             z-index: 1000;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out, bottom 0.1s ease-out;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
             opacity: 0;
             pointer-events: none;
             white-space: nowrap;
@@ -237,9 +248,9 @@
 
     <div class="top-container">
         <div class="tab-bar" id="tabBar">
-            <button class="tab active" data-tab="1">Note 1</button>
-            <button class="tab" data-tab="2">Note 2</button>
-            <button class="tab" data-tab="3">Note 3</button>
+            <button class="tab active" data-tab="1">メモ 1</button>
+            <button class="tab" data-tab="2">メモ 2</button>
+            <button class="tab" data-tab="3">メモ 3</button>
         </div>
 
         <div class="toolbar top-toolbar">
@@ -285,15 +296,41 @@
         };
         let isProgrammaticChange = false;
 
-        // --- iOS Safari用：キーボードへの完璧な追従処理 ---
+        // --- ▼ iOS Safari用：キーボードへのフェード追従処理 ▼ ---
         if (window.visualViewport) {
+            let lastViewportHeight = window.visualViewport.height;
+            let resizeTimer;
+
             const adjustToolbarPosition = () => {
                 const offsetBottom = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
                 const bottomVal = Math.max(0, offsetBottom);
+                // 位置自体は即座に裏側で更新しておく
                 bottomToolbar.style.bottom = `${bottomVal}px`;
-                toast.style.bottom = `${bottomVal + 70}px`;
+                toast.style.bottom = `${bottomVal + 60}px`;
             };
-            window.visualViewport.addEventListener('resize', adjustToolbarPosition);
+
+            window.visualViewport.addEventListener('resize', () => {
+                const currentHeight = window.visualViewport.height;
+                
+                // 高さが50px以上変化した＝キーボードの出現・消失と判定し、即座にフェードアウト
+                if (Math.abs(currentHeight - lastViewportHeight) > 50) {
+                    bottomToolbar.classList.add('fade-out');
+                    toast.classList.add('fade-out');
+                }
+                lastViewportHeight = currentHeight;
+                
+                // 裏側で位置を追従させる
+                adjustToolbarPosition();
+                
+                // アニメーションが落ち着く頃(約300ms後)にフェードインして再表示
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    bottomToolbar.classList.remove('fade-out');
+                    toast.classList.remove('fade-out');
+                }, 300); 
+            });
+
+            // スクロール時(バウンス等)はフェードさせず位置のみ追従
             window.visualViewport.addEventListener('scroll', adjustToolbarPosition);
             adjustToolbarPosition();
         }
@@ -397,7 +434,7 @@
             memoArea.focus();
         });
 
-        // --- コピー (下部ツールバーに移動) ---
+        // --- コピー ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -422,7 +459,7 @@
             }
         });
 
-        // --- ペースト (下部ツールバーに移動) ---
+        // --- ペースト ---
         document.getElementById('btnPaste').addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
@@ -501,7 +538,7 @@
             saveToLocal('settings');
         });
 
-        // --- ▼ アプリ初期化 (フォーカス処理を修正) ▼ ---
+        // --- アプリ初期化 ---
         window.addEventListener('DOMContentLoaded', () => {
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
@@ -524,10 +561,8 @@
             
             memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
             
-            // 値をセットした直後にフォーカスが飛ぶのを防ぐため、非同期（遅延）で確実にフォーカスを当てる
             setTimeout(() => {
                 memoArea.focus();
-                // 必要であれば、カーソルを一番最後に移動させる
                 const len = memoArea.value.length;
                 memoArea.setSelectionRange(len, len);
             }, 100);
