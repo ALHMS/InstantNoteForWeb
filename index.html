@@ -13,9 +13,8 @@
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
-            /* ▼ 透明度20% (不透明度80% = アルファ値 0.8) に調整 ▼ */
-            --toolbar-bg-transparent: rgba(248, 249, 250, 0.8);
-            --tab-bg-transparent: rgba(226, 230, 234, 0.8);
+            --toolbar-bg-transparent: rgba(248, 249, 250, 0.1);
+            --tab-bg-transparent: rgba(226, 230, 234, 0.1);
             
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
@@ -31,9 +30,8 @@
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
 
-                /* ▼ ダークモードも透明度20%に調整 ▼ */
-                --toolbar-bg-transparent: rgba(22, 31, 39, 0.8);
-                --tab-bg-transparent: rgba(13, 18, 23, 0.8);
+                --toolbar-bg-transparent: rgba(22, 31, 39, 0.1);
+                --tab-bg-transparent: rgba(13, 18, 23, 0.1);
 
                 --btn-active-bg-color: rgba(255, 255, 255, 0.1);
                 --btn-danger-color: #ff6b6b;
@@ -50,8 +48,17 @@
             padding: 0;
             display: flex;
             flex-direction: column;
+            
+            /* ▼ Safariの見切れ対策：bodyを画面に完全固定し、ページ全体がスクロールするのを防ぐ ▼ */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
             height: 100dvh;
             overflow: hidden;
+            
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s, color 0.3s;
@@ -66,16 +73,16 @@
             z-index: 20;
             display: flex;
             flex-direction: column;
+            /* 上部のセーフエリア（ノッチ等）への対応 */
+            padding-top: env(safe-area-inset-top);
         }
 
         /* --- タブバー --- */
         .tab-bar {
             display: flex;
             background-color: var(--tab-bg-transparent);
-            /* ▼ ブラー(ぼかし)を1pxに変更 ▼ */
             backdrop-filter: blur(1px);
             -webkit-backdrop-filter: blur(1px);
-            /* ▼ パディングyを0に設定 ▼ */
             padding: 0 4px 0 4px;
             gap: 4px;
             flex-shrink: 0;
@@ -88,7 +95,6 @@
         .tab {
             flex: 1;
             max-width: 120px;
-            /* タブも高さを抑えつつ押しやすく調整 */
             padding: 8px 10px;
             font-size: 0.85rem;
             background-color: transparent;
@@ -110,13 +116,11 @@
         /* --- ツールバー共通 --- */
         .toolbar {
             background-color: var(--toolbar-bg-transparent);
-            /* ▼ ブラー(ぼかし)を1pxに変更 ▼ */
             backdrop-filter: blur(1px);
             -webkit-backdrop-filter: blur(1px);
             display: flex;
             align-items: center;
             gap: 8px;
-            /* ▼ パディングyを0pxに設定し、高さをボタンサイズに依存させる ▼ */
             padding: 0 8px;
             box-sizing: border-box;
             flex-shrink: 0;
@@ -141,10 +145,11 @@
             left: 0;
             width: 100%;
             z-index: 20;
+            /* ▼ 下部のセーフエリア（iPhoneのホームバーなど）を考慮したパディング ▼ */
+            padding-bottom: env(safe-area-inset-bottom);
             transition: opacity 0.25s ease-in-out;
         }
 
-        /* フェードアニメーション用クラス */
         .fade-out {
             opacity: 0 !important;
             pointer-events: none;
@@ -166,7 +171,6 @@
         .toggle-container input { margin: 0 4px 0 0; width: 14px; height: 14px; }
 
         button.tool-btn {
-            /* ▼ ボタンサイズを元の40pxに戻す ▼ */
             width: 40px;
             height: 40px;
             padding: 0;
@@ -187,10 +191,8 @@
         button.tool-btn.danger { color: var(--btn-danger-color); }
         button.tool-btn.danger:active { background-color: rgba(255, 107, 107, 0.1); }
 
-        /* --- CSS Maskによるアイコン --- */
         .icon {
             display: inline-block;
-            /* ▼ アイコンサイズを元の20pxに戻す ▼ */
             width: 20px;
             height: 20px;
             background-color: currentColor; 
@@ -213,8 +215,9 @@
         #memoArea {
             flex-grow: 1;
             width: 100%;
-            /* ツールバーの高さ（パディング0・ボタン40px）に合わせて余白を再計算 (上約75px、下約50px) */
-            padding: 75px 15px 50px 15px;
+            height: 100%;
+            /* ▼ 下部パディングにもセーフエリア分を加算し、テキストが隠れないようにする ▼ */
+            padding: 75px 15px calc(50px + env(safe-area-inset-bottom)) 15px;
             font-family: inherit;
             border: none;
             outline: none;
@@ -223,6 +226,9 @@
             background-color: transparent;
             color: var(--text-color);
             caret-color: var(--text-color);
+            
+            /* ▼ bodyを固定したため、テキストエリア自体にスクロールバーを出す ▼ */
+            overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -301,14 +307,14 @@
         };
         let isProgrammaticChange = false;
 
-        // --- iOS Safari/モダンブラウザ用：フェードするキーボード追従 ---
+        // --- キーボードへの追従処理 ---
         if (window.visualViewport) {
             let lastViewportHeight = window.visualViewport.height;
             let resizeTimer;
 
             const adjustToolbarPosition = () => {
                 const vv = window.visualViewport;
-                // パディングを0にしたため、ツールバーの高さはボタン(40px)＋ボーダー等で約41pxになります
+                // paddingを追加したため高さを正確に取得
                 const tbHeight = bottomToolbar.offsetHeight || 41; 
                 
                 const topVal = vv.offsetTop + vv.height - tbHeight;
@@ -342,6 +348,7 @@
             setTimeout(adjustToolbarPosition, 100);
         }
 
+        // --- mousedownでのフォーカス外れ防止処理 ---
         document.querySelectorAll('button.tool-btn, .tab, input[type="range"], input[type="checkbox"]').forEach(el => {
             el.addEventListener('mousedown', (e) => {
                 if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
@@ -435,31 +442,43 @@
             memoArea.focus();
         });
 
+        // --- ▼ コピー処理（非アクティブ時のフォーカス復帰防止） ▼ ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
             const currentText = memoArea.value;
             const isTextSelected = start !== end;
             
+            // ボタンが押される直前にテキストエリアがアクティブだったか判定
+            // (mousedown時の e.preventDefault() のおかげで正確に判定できます)
+            const isActive = document.activeElement === memoArea;
+            
             try {
                 if (isTextSelected) {
                     const selectedText = currentText.substring(start, end);
                     await navigator.clipboard.writeText(selectedText);
                     showToast('選択部分をコピーしました');
-                    memoArea.focus();
-                    memoArea.setSelectionRange(start, end);
+                    
+                    if (isActive) {
+                        memoArea.focus();
+                        memoArea.setSelectionRange(start, end);
+                    }
                 } else {
                     await navigator.clipboard.writeText(currentText);
                     showToast('全文をコピーしました');
-                    memoArea.focus();
+                    
+                    if (isActive) {
+                        memoArea.focus();
+                    }
                 }
             } catch (err) {
                 showToast('コピーに失敗しました');
-                memoArea.focus();
+                if (isActive) memoArea.focus();
             }
         });
 
         document.getElementById('btnPaste').addEventListener('click', async () => {
+            const isActive = document.activeElement === memoArea;
             try {
                 const text = await navigator.clipboard.readText();
                 if (!text) return;
@@ -487,7 +506,7 @@
                     "※設定を変更せずにペーストする場合は、テキストエリアを長押しして標準の「ペースト」を選択してください。";
                 
                 alert(guideMessage);
-                memoArea.focus();
+                if (isActive) memoArea.focus();
             }
         });
 
@@ -534,6 +553,7 @@
             saveToLocal('settings');
         });
 
+        // --- ▼ アプリ初期化 (初期フォーカス処理) ▼ ---
         window.addEventListener('DOMContentLoaded', () => {
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
@@ -556,11 +576,12 @@
             
             memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
             
+            // 処理が完了した直後に、確実にフォーカスを当てて末尾にカーソルを置く
             setTimeout(() => {
                 memoArea.focus();
                 const len = memoArea.value.length;
                 memoArea.setSelectionRange(len, len);
-            }, 100);
+            }, 50);
         });
 
         if ('serviceWorker' in navigator) {
