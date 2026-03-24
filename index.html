@@ -10,6 +10,8 @@
         :root {
             --bg-color: #ffffff;
             --header-bg-color: #f8f9fa;
+            /* ▼ 下部ツールバー用の半透明背景色（ライトモード） ▼ */
+            --bottom-toolbar-bg: rgba(248, 249, 250, 0.85);
             --text-color: #333333;
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
@@ -17,6 +19,9 @@
             --btn-bg-color: #ffffff;
             --btn-active-bg-color: #e2e6ea;
             --btn-danger-color: #dc3545;
+            
+            --tab-bg: #e2e6ea;
+            --tab-active-bg: #ffffff;
             
             --toast-bg-color: rgba(50, 50, 50, 0.9);
             --toast-text-color: #ffffff;
@@ -26,6 +31,8 @@
             :root {
                 --bg-color: #10171d; 
                 --header-bg-color: #161f27;
+                /* ▼ 下部ツールバー用の半透明背景色（ダークモード） ▼ */
+                --bottom-toolbar-bg: rgba(22, 31, 39, 0.85);
                 --textarea-bg-color: #10171d;
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
@@ -33,6 +40,9 @@
                 --btn-bg-color: #161f27;
                 --btn-active-bg-color: #2a3b4c;
                 --btn-danger-color: #ff6b6b;
+
+                --tab-bg: #0d1217;
+                --tab-active-bg: #161f27;
 
                 --toast-bg-color: rgba(230, 241, 255, 0.95);
                 --toast-text-color: #10171d;
@@ -53,6 +63,40 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
+        /* --- タブバー --- */
+        .tab-bar {
+            display: flex;
+            background-color: var(--tab-bg);
+            padding: 6px 6px 0 6px; /* 下部以外に余白 */
+            gap: 4px;
+            flex-shrink: 0;
+            overflow-x: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+
+        .tab {
+            flex: 1;
+            max-width: 120px;
+            padding: 8px 12px;
+            background-color: transparent;
+            color: var(--text-color);
+            border: none;
+            border-radius: 8px 8px 0 0; /* 上の角だけ丸く */
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s, background-color 0.2s;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .tab.active {
+            background-color: var(--tab-active-bg);
+            opacity: 1;
+        }
+
         /* --- ツールバー共通スタイル --- */
         .toolbar {
             background-color: var(--header-bg-color);
@@ -68,16 +112,15 @@
         /* --- 上部ツールバー --- */
         .top-toolbar {
             border-bottom: 1px solid var(--border-color);
+            background-color: var(--tab-active-bg); /* アクティブタブと色を合わせる */
             overflow-x: auto;
             white-space: nowrap;
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        .top-toolbar::-webkit-scrollbar {
-            display: none;
-        }
+        .top-toolbar::-webkit-scrollbar { display: none; }
 
-        /* --- ▼ 下部ツールバー (Safari対策で position: fixed に変更) ▼ --- */
+        /* --- 下部ツールバー (半透明すりガラス仕様) --- */
         .bottom-toolbar {
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
@@ -85,11 +128,22 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            /* キーボードが出た時のアニメーションを滑らかにする */
             transition: bottom 0.1s ease-out; 
+            
+            /* ▼ 背景を半透明にし、すりガラス効果（ブラー）を適用 ▼ */
+            background-color: var(--bottom-toolbar-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        /* すりガラス上のボタンは背景を完全に透明にして馴染ませる */
+        .bottom-toolbar button {
+            background-color: transparent;
+            border-color: transparent;
+        }
+        .bottom-toolbar button:active {
+            background-color: var(--btn-active-bg-color);
         }
 
-        /* ツールバー内の区切り線 */
         .divider {
             width: 1px;
             height: 24px;
@@ -99,24 +153,13 @@
         }
 
         /* --- UIパーツ --- */
-        .font-size-control {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            flex-shrink: 0;
-        }
+        .font-size-control { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         #fontSizeSlider { width: 70px; cursor: pointer; }
 
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            font-size: 0.85rem;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
+        .toggle-container { display: flex; align-items: center; font-size: 0.85rem; cursor: pointer; flex-shrink: 0; }
         .toggle-container input { margin: 0 4px 0 0; width: 16px; height: 16px; }
 
-        button {
+        button.tool-btn {
             width: 40px;
             height: 40px;
             padding: 0;
@@ -133,9 +176,9 @@
             transition: background-color 0.1s;
         }
 
-        button:active { background-color: var(--btn-active-bg-color); }
-        button.danger { color: var(--btn-danger-color); border-color: var(--btn-danger-color); }
-        button.danger:active { background-color: rgba(255, 107, 107, 0.1); }
+        button.tool-btn:active { background-color: var(--btn-active-bg-color); }
+        button.tool-btn.danger { color: var(--btn-danger-color); border-color: var(--btn-danger-color); }
+        button.tool-btn.danger:active { background-color: rgba(255, 107, 107, 0.1); }
 
         /* --- CSS Maskによるアイコン --- */
         .icon {
@@ -162,7 +205,6 @@
         #memoArea {
             flex-grow: 1;
             width: 100%;
-            /* ▼ 下部ツールバーにテキストが隠れないように padding-bottom を追加 ▼ */
             padding: 15px 15px 70px 15px;
             font-family: inherit;
             border: none;
@@ -197,12 +239,18 @@
 </head>
 <body>
 
+    <div class="tab-bar" id="tabBar">
+        <button class="tab active" data-tab="1">メモ 1</button>
+        <button class="tab" data-tab="2">メモ 2</button>
+        <button class="tab" data-tab="3">メモ 3</button>
+    </div>
+
     <div class="toolbar top-toolbar">
-        <button id="btnUndo" title="元に戻す"><span class="icon icon-undo"></span></button>
-        <button id="btnRedo" title="やり直し"><span class="icon icon-redo"></span></button>
-        <button id="btnClear" class="danger" title="全文破棄"><span class="icon icon-trash"></span></button>
-        <button id="btnCopy" title="コピー"><span class="icon icon-copy"></span></button>
-        <button id="btnPaste" title="ペースト"><span class="icon icon-paste"></span></button>
+        <button id="btnUndo" class="tool-btn" title="元に戻す"><span class="icon icon-undo"></span></button>
+        <button id="btnRedo" class="tool-btn" title="やり直し"><span class="icon icon-redo"></span></button>
+        <button id="btnClear" class="tool-btn danger" title="全文破棄"><span class="icon icon-trash"></span></button>
+        <button id="btnCopy" class="tool-btn" title="コピー"><span class="icon icon-copy"></span></button>
+        <button id="btnPaste" class="tool-btn" title="ペースト"><span class="icon icon-paste"></span></button>
         
         <div class="divider"></div>
         
@@ -218,7 +266,7 @@
     <textarea id="memoArea" placeholder="ここにメモを入力..." autofocus></textarea>
 
     <div class="toolbar bottom-toolbar">
-        <button id="btnPartialSelect" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
+        <button id="btnPartialSelect" class="tool-btn" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
     </div>
 
     <div id="toast"></div>
@@ -229,30 +277,33 @@
         const fontSizeSlider = document.getElementById('fontSizeSlider');
         const toast = document.getElementById('toast');
         const bottomToolbar = document.querySelector('.bottom-toolbar');
+        const tabs = document.querySelectorAll('.tab');
         
-        // --- ▼ iOS Safari用：キーボードへの完璧な追従処理 (Visual Viewport API) ▼ ---
+        // --- ▼ タブと履歴のデータ管理 ▼ ---
+        let currentTab = 1;
+        // 3つのタブそれぞれの履歴状態を保持するオブジェクト
+        let tabData = {
+            1: { history: [''], index: 0 },
+            2: { history: [''], index: 0 },
+            3: { history: [''], index: 0 }
+        };
+        let isProgrammaticChange = false;
+
+        // --- iOS Safari用：キーボードへの完璧な追従処理 ---
         if (window.visualViewport) {
             const adjustToolbarPosition = () => {
-                // 画面全体の高さから、実際に見えている領域(キーボードを除いた部分)の高さを引く
-                // offsetTopを加味することで、Safari特有のスクロールバウンス時のズレも補正します
                 const offsetBottom = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
                 const bottomVal = Math.max(0, offsetBottom);
-                
-                // 下部ツールバーとトーストをキーボードの高さ分だけ持ち上げる
                 bottomToolbar.style.bottom = `${bottomVal}px`;
                 toast.style.bottom = `${bottomVal + 70}px`;
             };
-
-            // キーボードの出現(resize)や、スクロール(scroll)に合わせてリアルタイムに位置を更新
             window.visualViewport.addEventListener('resize', adjustToolbarPosition);
             window.visualViewport.addEventListener('scroll', adjustToolbarPosition);
-            
-            // 初期状態の計算
             adjustToolbarPosition();
         }
-        // --- ▲ ここまで ▲ ---
 
-        document.querySelectorAll('button, input[type="range"], input[type="checkbox"]').forEach(el => {
+        // --- モバイルUX向上 (ボタン押下時のフォーカス外れ防止) ---
+        document.querySelectorAll('button.tool-btn, .tab, input[type="range"], input[type="checkbox"]').forEach(el => {
             el.addEventListener('mousedown', (e) => {
                 if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
                     e.preventDefault(); 
@@ -260,6 +311,7 @@
             });
         });
 
+        // --- トースト通知機能 ---
         let toastTimer;
         function showToast(message) {
             clearTimeout(toastTimer);
@@ -270,35 +322,63 @@
             }, 2500);
         }
 
-        let history = [''];
-        let historyIndex = 0;
-        let isProgrammaticChange = false;
+        // --- タブ切り替え処理 ---
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const targetTab = parseInt(e.target.dataset.tab);
+                if (targetTab === currentTab) return; // 同じタブなら何もしない
 
+                // UIの切り替え
+                tabs.forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+
+                // 現在のタブ状態を更新
+                currentTab = targetTab;
+                localStorage.setItem('memo_active_tab', currentTab);
+
+                // そのタブの保存設定を読み込む
+                const isSaveOn = localStorage.getItem(`memo_save_toggle_${currentTab}`) === 'true';
+                saveToggle.checked = isSaveOn;
+
+                // そのタブのテキスト（履歴の最新）を読み込む
+                isProgrammaticChange = true;
+                memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
+                isProgrammaticChange = false;
+
+                memoArea.focus();
+            });
+        });
+
+        // --- 状態保存 (Undo/Redo用) ---
         function saveState() {
             if (isProgrammaticChange) return;
             const text = memoArea.value;
-            if (text !== history[historyIndex]) {
-                history = history.slice(0, historyIndex + 1);
-                history.push(text);
-                historyIndex++;
+            const currentHistory = tabData[currentTab].history;
+            const currentIndex = tabData[currentTab].index;
+
+            if (text !== currentHistory[currentIndex]) {
+                tabData[currentTab].history = currentHistory.slice(0, currentIndex + 1);
+                tabData[currentTab].history.push(text);
+                tabData[currentTab].index++;
             }
             saveToLocal('text');
         }
 
         memoArea.addEventListener('input', saveState);
 
+        // --- Undo / Redo ---
         document.getElementById('btnUndo').addEventListener('click', () => {
-            if (historyIndex > 0) {
-                historyIndex--;
-                updateTextarea(history[historyIndex]);
+            if (tabData[currentTab].index > 0) {
+                tabData[currentTab].index--;
+                updateTextarea(tabData[currentTab].history[tabData[currentTab].index]);
             }
             memoArea.focus();
         });
 
         document.getElementById('btnRedo').addEventListener('click', () => {
-            if (historyIndex < history.length - 1) {
-                historyIndex++;
-                updateTextarea(history[historyIndex]);
+            if (tabData[currentTab].index < tabData[currentTab].history.length - 1) {
+                tabData[currentTab].index++;
+                updateTextarea(tabData[currentTab].history[tabData[currentTab].index]);
             }
             memoArea.focus();
         });
@@ -313,6 +393,7 @@
             isProgrammaticChange = false;
         }
 
+        // --- 全文破棄 ---
         document.getElementById('btnClear').addEventListener('click', () => {
             if (memoArea.value === '') {
                 memoArea.focus();
@@ -324,6 +405,7 @@
             memoArea.focus();
         });
 
+        // --- コピー ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -348,6 +430,7 @@
             }
         });
 
+        // --- ペースト ---
         document.getElementById('btnPaste').addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
@@ -380,6 +463,7 @@
             }
         });
 
+        // --- 部分選択 ---
         document.getElementById('btnPartialSelect').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -390,18 +474,23 @@
             memoArea.focus();
         });
 
+        // --- 文字サイズ変更 ---
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
             memoArea.style.fontSize = size + 'px';
             saveToLocal('settings');
         });
 
+        // --- ローカルストレージへの保存 ---
         function saveToLocal(type) {
-            localStorage.setItem('memo_save_toggle', saveToggle.checked);
+            // トグルの状態は現在のタブIDに紐づけて保存
+            localStorage.setItem(`memo_save_toggle_${currentTab}`, saveToggle.checked);
             
             if (type === 'text' || type === 'all') {
                 if (saveToggle.checked) {
-                    localStorage.setItem('memo_data', memoArea.value);
+                    localStorage.setItem(`memo_data_${currentTab}`, memoArea.value);
+                } else {
+                    localStorage.removeItem(`memo_data_${currentTab}`);
                 }
             }
             
@@ -412,32 +501,47 @@
 
         saveToggle.addEventListener('change', () => {
             if (saveToggle.checked) {
-                showToast('自動保存をオンにしました');
+                showToast(`メモ ${currentTab} の自動保存をオンにしました`);
                 saveToLocal('text');
             } else {
-                showToast('自動保存をオフにし、データを破棄しました');
-                localStorage.removeItem('memo_data');
+                showToast(`メモ ${currentTab} の自動保存をオフにし、データを破棄しました`);
+                localStorage.removeItem(`memo_data_${currentTab}`);
             }
             saveToLocal('settings');
         });
 
+        // --- アプリ初期化 ---
         window.addEventListener('DOMContentLoaded', () => {
-            const isSaveOn = localStorage.getItem('memo_save_toggle') === 'true';
-            saveToggle.checked = isSaveOn;
-
+            // 1. 文字サイズ設定の復元
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
             memoArea.style.fontSize = savedFontSize + 'px';
-            
-            if (isSaveOn) {
-                const savedText = localStorage.getItem('memo_data') || '';
-                memoArea.value = savedText;
-                history = [savedText];
+
+            // 2. 3つのタブすべての保存データをメモリ(tabData)に読み込む
+            for(let i = 1; i <= 3; i++) {
+                const isSaveOn = localStorage.getItem(`memo_save_toggle_${i}`) === 'true';
+                if (isSaveOn) {
+                    const savedText = localStorage.getItem(`memo_data_${i}`) || '';
+                    tabData[i].history = [savedText];
+                }
             }
+
+            // 3. 前回開いていたタブを復元（なければ1）
+            currentTab = parseInt(localStorage.getItem('memo_active_tab')) || 1;
+            
+            // UIを現在のタブに合わせる
+            tabs.forEach(t => t.classList.toggle('active', parseInt(t.dataset.tab) === currentTab));
+            
+            const isSaveOn = localStorage.getItem(`memo_save_toggle_${currentTab}`) === 'true';
+            saveToggle.checked = isSaveOn;
+            
+            // テキストエリアに現在のタブの内容を反映
+            memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
             
             memoArea.focus();
         });
 
+        // --- Service Worker 登録 ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
