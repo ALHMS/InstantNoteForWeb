@@ -13,9 +13,9 @@
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
-            /* ▼ すりガラスの透明度を上げて（0.85 -> 0.6）裏側をハッキリ透けさせる ▼ */
-            --toolbar-bg-transparent: rgba(248, 249, 250, 0.6);
-            --tab-bg-transparent: rgba(226, 230, 234, 0.5);
+            /* ▼ 90%透明 (アルファ値 0.1) に設定。デバッグや透け感の確認に最適です ▼ */
+            --toolbar-bg-transparent: rgba(248, 249, 250, 0.1);
+            --tab-bg-transparent: rgba(226, 230, 234, 0.1);
             
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
@@ -31,9 +31,9 @@
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
 
-                /* ▼ ダークモードのすりガラス透明度も上げる ▼ */
-                --toolbar-bg-transparent: rgba(22, 31, 39, 0.6);
-                --tab-bg-transparent: rgba(13, 18, 23, 0.5);
+                /* ▼ ダークモードも90%透明に ▼ */
+                --toolbar-bg-transparent: rgba(22, 31, 39, 0.1);
+                --tab-bg-transparent: rgba(13, 18, 23, 0.1);
 
                 --btn-active-bg-color: rgba(255, 255, 255, 0.1);
                 --btn-danger-color: #ff6b6b;
@@ -74,8 +74,8 @@
             background-color: var(--tab-bg-transparent);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            /* 高さ15%減: paddingを調整 */
-            padding: 5px 5px 0 5px;
+            /* ▼ 高さ減: paddingを極限まで削減 ▼ */
+            padding: 4px 4px 0 4px;
             gap: 4px;
             flex-shrink: 0;
             overflow-x: auto;
@@ -87,12 +87,13 @@
         .tab {
             flex: 1;
             max-width: 120px;
-            padding: 6px 10px; /* 少しコンパクトに */
+            /* ▼ 高さ減: 余白とフォントサイズを縮小 ▼ */
+            padding: 5px 10px;
+            font-size: 0.8rem;
             background-color: transparent;
             color: var(--text-color);
             border: none;
             border-radius: 8px 8px 0 0;
-            font-size: 0.85rem;
             font-weight: bold;
             cursor: pointer;
             opacity: 0.6;
@@ -112,9 +113,9 @@
             -webkit-backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
-            gap: 10px;
-            /* 高さ15%減: paddingを調整 */
-            padding: 6px 8px;
+            /* ▼ 高さ減: gapとpaddingを削減 ▼ */
+            gap: 8px;
+            padding: 4px 6px;
             box-sizing: border-box;
             flex-shrink: 0;
         }
@@ -138,11 +139,11 @@
             left: 0;
             width: 100%;
             z-index: 20;
-            /* ▼ 位置移動(bottom)のアニメーションを消し、透明度(opacity)のアニメーションに変更 ▼ */
-            transition: opacity 0.2s ease-in-out;
+            /* JSでのtop移動がカクつかないよう、位置プロパティのtransitionは外す。opacityのみアニメーション化 */
+            transition: opacity 0.25s ease-in-out;
         }
 
-        /* フェードアウト用のクラス */
+        /* フェードアニメーション用クラス */
         .fade-out {
             opacity: 0 !important;
             pointer-events: none;
@@ -150,7 +151,8 @@
 
         .divider {
             width: 1px;
-            height: 20px; /* 少し短く */
+            /* ▼ 高さ減: 区切り線を短く ▼ */
+            height: 16px;
             background-color: var(--border-color);
             margin: 0 4px;
             flex-shrink: 0;
@@ -158,15 +160,16 @@
 
         /* --- UIパーツ --- */
         .font-size-control { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-        #fontSizeSlider { width: 60px; cursor: pointer; } /* 少し短く */
+        /* ▼ 高さ減: スライダー幅を短く ▼ */
+        #fontSizeSlider { width: 50px; cursor: pointer; }
 
         .toggle-container { display: flex; align-items: center; font-size: 0.8rem; cursor: pointer; flex-shrink: 0; }
         .toggle-container input { margin: 0 4px 0 0; width: 14px; height: 14px; }
 
         button.tool-btn {
-            /* 高さ15%減: ボタンサイズを 40px -> 34px に縮小 */
-            width: 34px;
-            height: 34px;
+            /* ▼ 高さ減: ボタンサイズを 40px -> 30px に縮小 (-25%) ▼ */
+            width: 30px;
+            height: 30px;
             padding: 0;
             display: flex;
             align-items: center;
@@ -188,9 +191,9 @@
         /* --- CSS Maskによるアイコン --- */
         .icon {
             display: inline-block;
-            /* 高さ15%減: アイコンサイズを 20px -> 18px に縮小 */
-            width: 18px;
-            height: 18px;
+            /* ▼ 高さ減: アイコンサイズを 20px -> 16px に縮小 ▼ */
+            width: 16px;
+            height: 16px;
             background-color: currentColor; 
             -webkit-mask-repeat: no-repeat;
             mask-repeat: no-repeat;
@@ -211,8 +214,8 @@
         #memoArea {
             flex-grow: 1;
             width: 100%;
-            /* 上部が約70px、下部が約47pxになったため余白を調整 */
-            padding: 85px 15px 60px 15px;
+            /* 上下ツールバーのスリム化に合わせて余白を調整 (上約70px、下約50px) */
+            padding: 70px 15px 50px 15px;
             font-family: inherit;
             border: none;
             outline: none;
@@ -227,21 +230,25 @@
         /* --- トースト通知 --- */
         #toast {
             position: fixed;
-            bottom: 60px; /* ツールバーの高さに合わせて調整 */
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            transform: translateX(-50%);
             background-color: var(--toast-bg-color);
             color: var(--toast-text-color);
             padding: 10px 20px;
             border-radius: 20px;
             font-size: 0.85rem;
             z-index: 1000;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            /* Y軸移動のアニメーションを外してチラつき防止。opacityのみにする */
             opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
             pointer-events: none;
             white-space: nowrap;
         }
-        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        #toast.show { 
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
 <body>
@@ -296,46 +303,52 @@
         };
         let isProgrammaticChange = false;
 
-        // --- ▼ iOS Safari用：キーボードへのフェード追従処理 ▼ ---
+        // --- ▼ Safariのスクロールバグを防ぎ、全ブラウザでフェードする完璧なキーボード追従 ▼ ---
         if (window.visualViewport) {
             let lastViewportHeight = window.visualViewport.height;
             let resizeTimer;
 
             const adjustToolbarPosition = () => {
-                const offsetBottom = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
-                const bottomVal = Math.max(0, offsetBottom);
-                // 位置自体は即座に裏側で更新しておく
-                bottomToolbar.style.bottom = `${bottomVal}px`;
-                toast.style.bottom = `${bottomVal + 60}px`;
+                const vv = window.visualViewport;
+                const tbHeight = bottomToolbar.offsetHeight || 38; 
+                
+                // Safari対策：画面のbottomではなく、「見えている領域の絶対的な上部からの距離(top)」を計算して配置する
+                const topVal = vv.offsetTop + vv.height - tbHeight;
+                
+                bottomToolbar.style.bottom = 'auto'; // bottom指定を無効化
+                bottomToolbar.style.top = `${topVal}px`; // 絶対的なtop位置に固定
+                
+                toast.style.bottom = 'auto';
+                toast.style.top = `${topVal - 60}px`;
             };
 
             window.visualViewport.addEventListener('resize', () => {
                 const currentHeight = window.visualViewport.height;
                 
-                // 高さが50px以上変化した＝キーボードの出現・消失と判定し、即座にフェードアウト
-                if (Math.abs(currentHeight - lastViewportHeight) > 50) {
+                // キーボードの開閉を検知 (高さが大きく変わった時)
+                if (Math.abs(currentHeight - lastViewportHeight) > 40) {
+                    // 即座にフェードアウト
                     bottomToolbar.classList.add('fade-out');
                     toast.classList.add('fade-out');
+                    
+                    // アニメーションが落ち着く頃(約350ms後)に裏側で移動完了したものをフェードイン
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                        bottomToolbar.classList.remove('fade-out');
+                        toast.classList.remove('fade-out');
+                    }, 350); 
                 }
                 lastViewportHeight = currentHeight;
-                
-                // 裏側で位置を追従させる
                 adjustToolbarPosition();
-                
-                // アニメーションが落ち着く頃(約300ms後)にフェードインして再表示
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    bottomToolbar.classList.remove('fade-out');
-                    toast.classList.remove('fade-out');
-                }, 300); 
             });
 
-            // スクロール時(バウンス等)はフェードさせず位置のみ追従
+            // スクロール時（Safariのバウンス等）はフェードさせず位置のみ追従
             window.visualViewport.addEventListener('scroll', adjustToolbarPosition);
-            adjustToolbarPosition();
+            
+            // 初期化（要素レンダリング待ち）
+            setTimeout(adjustToolbarPosition, 100);
         }
 
-        // --- モバイルUX向上 (ボタン押下時のフォーカス外れ防止) ---
         document.querySelectorAll('button.tool-btn, .tab, input[type="range"], input[type="checkbox"]').forEach(el => {
             el.addEventListener('mousedown', (e) => {
                 if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
@@ -344,7 +357,6 @@
             });
         });
 
-        // --- トースト通知機能 ---
         let toastTimer;
         function showToast(message) {
             clearTimeout(toastTimer);
@@ -355,7 +367,6 @@
             }, 2500);
         }
 
-        // --- タブ切り替え処理 ---
         tabs.forEach(tab => {
             tab.addEventListener('click', (e) => {
                 const targetTab = parseInt(e.target.dataset.tab);
@@ -378,7 +389,6 @@
             });
         });
 
-        // --- 状態保存 (Undo/Redo用) ---
         function saveState() {
             if (isProgrammaticChange) return;
             const text = memoArea.value;
@@ -395,7 +405,6 @@
 
         memoArea.addEventListener('input', saveState);
 
-        // --- Undo / Redo ---
         document.getElementById('btnUndo').addEventListener('click', () => {
             if (tabData[currentTab].index > 0) {
                 tabData[currentTab].index--;
@@ -422,7 +431,6 @@
             isProgrammaticChange = false;
         }
 
-        // --- 全文破棄 ---
         document.getElementById('btnClear').addEventListener('click', () => {
             if (memoArea.value === '') {
                 memoArea.focus();
@@ -434,7 +442,6 @@
             memoArea.focus();
         });
 
-        // --- コピー ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -459,7 +466,6 @@
             }
         });
 
-        // --- ペースト ---
         document.getElementById('btnPaste').addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
@@ -492,7 +498,6 @@
             }
         });
 
-        // --- 部分選択 ---
         document.getElementById('btnPartialSelect').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -503,14 +508,12 @@
             memoArea.focus();
         });
 
-        // --- 文字サイズ変更 ---
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
             memoArea.style.fontSize = size + 'px';
             saveToLocal('settings');
         });
 
-        // --- ローカルストレージへの保存 ---
         function saveToLocal(type) {
             localStorage.setItem(`memo_save_toggle_${currentTab}`, saveToggle.checked);
             
@@ -538,7 +541,6 @@
             saveToLocal('settings');
         });
 
-        // --- アプリ初期化 ---
         window.addEventListener('DOMContentLoaded', () => {
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
@@ -568,7 +570,6 @@
             }, 100);
         });
 
-        // --- Service Worker 登録 ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
