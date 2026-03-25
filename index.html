@@ -144,7 +144,8 @@
             width: 100%;
             z-index: 20;
             padding-bottom: env(safe-area-inset-bottom);
-            transition: opacity 0.25s ease-in-out;
+            /* ▼ 位置移動を滑らかにするため、transformアニメーションを追加 ▼ */
+            transition: opacity 0.25s ease-in-out, transform 0.1s ease-out;
         }
 
         .arrow-keys {
@@ -224,7 +225,10 @@
             width: 100%;
             height: 100%;
             padding: 75px 15px calc(50px + env(safe-area-inset-bottom)) 15px;
-            font-family: inherit;
+            
+            /* ▼ 修正：上下移動を正確にするため、等幅フォント(monospace)を強制適用 ▼ */
+            font-family: 'Courier New', Consolas, Monaco, 'Osaka-等幅', 'ＭＳ ゴシック', monospace;
+            
             border: none;
             outline: none;
             resize: none;
@@ -239,8 +243,10 @@
         /* --- トースト通知 --- */
         #toast {
             position: fixed;
+            bottom: 0;
             left: 50%;
-            transform: translateX(-50%);
+            /* transformで位置を制御するため、初期値を設定 */
+            transform: translateX(-50%) translateY(-60px);
             background-color: var(--toast-bg-color);
             color: var(--toast-text-color);
             padding: 10px 20px;
@@ -249,7 +255,7 @@
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out, transform 0.1s ease-out;
             pointer-events: none;
             white-space: nowrap;
         }
@@ -276,12 +282,14 @@
             <div class="divider"></div>
             
             <div class="font-size-control">
-                <input type="range" id="fontSizeSlider" min="14" max="48" value="24" step="1">
+                <input type="range" id="fontSizeSlider" min="16" max="40" value="24" step="4">
             </div>
             <label class="toggle-container">
                 <input type="checkbox" id="saveToggle">
                 <span>保存</span>
             </label>
+            
+            <button id="btnInfo" class="tool-btn" style="margin-left: auto;" title="情報">ℹ️</button>
         </div>
     </div>
 
@@ -318,21 +326,20 @@
         };
         let isProgrammaticChange = false;
 
-        // --- キーボードへの追従処理 ---
+        // --- ▼ 修正：Safariでの「上がりすぎ問題」を防ぐ、安全なtransform追従 ▼ ---
         if (window.visualViewport) {
             let lastViewportHeight = window.visualViewport.height;
             let resizeTimer;
 
             const adjustToolbarPosition = () => {
                 const vv = window.visualViewport;
-                const tbHeight = bottomToolbar.offsetHeight || 41; 
-                const topVal = vv.offsetTop + vv.height - tbHeight;
+                // 画面全体の高さから、実際に見えている高さ(キーボードを引いた分)を計算
+                const keyboardHeight = window.innerHeight - vv.height;
                 
-                bottomToolbar.style.bottom = 'auto'; 
-                bottomToolbar.style.top = `${topVal}px`; 
-                
-                toast.style.bottom = 'auto';
-                toast.style.top = `${topVal - 60}px`;
+                // bottom: 0 を基準とし、キーボードの高さ分だけ上に押し上げる(transform)
+                // offsetTopを使わないため、画面全体がスクロールしても二重に移動しません
+                bottomToolbar.style.transform = `translateY(-${Math.max(0, keyboardHeight)}px)`;
+                toast.style.transform = `translateX(-50%) translateY(-${Math.max(0, keyboardHeight) + 60}px)`;
             };
 
             window.visualViewport.addEventListener('resize', () => {
@@ -362,6 +369,11 @@
                     e.preventDefault(); 
                 }
             });
+        });
+
+        // --- 追加：Infoボタンのアラート表示 ---
+        document.getElementById('btnInfo').addEventListener('click', () => {
+            alert("オフラインメモ アプリ\nバージョン: v17\n\n機能:\n・3タブ切替\n・自動保存\n・キーボード追従\n・高度なカーソル移動");
         });
 
         let toastTimer;
@@ -449,7 +461,6 @@
             memoArea.focus();
         });
 
-        // --- コピー処理 ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
@@ -515,22 +526,16 @@
             memoArea.focus();
         });
 
-        // --- ▼ 矢印キー（動的文字サイズ計算による近似ロジック） ▼ ---
-        
-        // 1行あたりの推定文字数を動的に計算する関数
+        // --- ▼ 修正：等幅フォントを前提とした正確な行移動ロジック ▼ ---
         function getDynamicCharsPerLine() {
             const style = window.getComputedStyle(memoArea);
-            // 左右のパディングを取得して実際の入力可能幅を計算
             const paddingLeft = parseFloat(style.paddingLeft);
             const paddingRight = parseFloat(style.paddingRight);
             const availableWidth = memoArea.clientWidth - paddingLeft - paddingRight;
-            
-            // 現在の文字サイズを取得
             const fontSize = parseFloat(style.fontSize);
             
-            // 全角文字（日本語など）を想定し、幅÷文字サイズを1行の文字数とする
-            // 最小値1を担保し、計算エラーを防ぎます
-            return Math.max(1, Math.floor(availableWidth / fontSize));
+            // 等幅フォント(monospace)により、平均文字幅を fontSize の0.95倍と仮定して計算
+            return Math.max(1, Math.floor(availableWidth / (fontSize * 0.95)));
         }
 
         document.getElementById('btnArrowLeft').addEventListener('click', () => {
@@ -548,20 +553,18 @@
         document.getElementById('btnArrowUp').addEventListener('click', () => {
             const val = memoArea.value;
             const start = memoArea.selectionStart;
-            
-            // 現在の文字サイズに基づいた1行の文字数を動的に取得
             const charsPerLine = getDynamicCharsPerLine();
 
             const prevNewline = val.lastIndexOf('\n', start - 1);
             const currentLineStart = prevNewline + 1;
             const charsInCurrentLine = start - currentLineStart;
 
-            // 長い行の途中にいる場合は、計算した文字数分だけ戻す（見た目上の上の行へ）
+            // 長い行の途中にいる場合
             if (charsInCurrentLine >= charsPerLine) {
                 const newPos = start - charsPerLine;
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                // 物理的な前の行へ移動
+                // 前の行へ移動
                 if (prevNewline >= 0) {
                     const prevPrevNewline = val.lastIndexOf('\n', prevNewline - 1);
                     const prevLineStart = prevPrevNewline + 1;
@@ -576,7 +579,7 @@
                     const newPos = prevLineStart + Math.min(visualLineStartOffset + column, prevLineLength);
                     memoArea.setSelectionRange(newPos, newPos);
                 } else {
-                    memoArea.setSelectionRange(0, 0); // 先頭へ
+                    memoArea.setSelectionRange(0, 0);
                 }
             }
             memoArea.focus();
@@ -585,8 +588,6 @@
         document.getElementById('btnArrowDown').addEventListener('click', () => {
             const val = memoArea.value;
             const start = memoArea.selectionStart;
-            
-            // 現在の文字サイズに基づいた1行の文字数を動的に取得
             const charsPerLine = getDynamicCharsPerLine();
 
             const nextNewline = val.indexOf('\n', start);
@@ -597,12 +598,12 @@
             const charsInCurrentLine = start - currentLineStart;
             const distanceToEndOfLine = actualNextNewline - start;
 
-            // 長い行の途中にいる場合は、計算した文字数分だけ進める（見た目上の下の行へ）
+            // 長い行の途中にいる場合
             if (distanceToEndOfLine >= charsPerLine) {
                 const newPos = start + charsPerLine;
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                // 物理的な次の行へ移動
+                // 次の行へ移動
                 if (nextNewline !== -1) {
                     const nextNextNewline = val.indexOf('\n', nextNewline + 1);
                     const endOfNextLine = nextNextNewline === -1 ? val.length : nextNextNewline;
@@ -613,13 +614,11 @@
                     const newPos = nextLineStart + Math.min(column, nextLineLength);
                     memoArea.setSelectionRange(newPos, newPos);
                 } else {
-                    memoArea.setSelectionRange(val.length, val.length); // 末尾へ
+                    memoArea.setSelectionRange(val.length, val.length);
                 }
             }
             memoArea.focus();
         });
-
-        // --- ▲ 矢印キーロジックここまで ▲ ---
 
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
