@@ -49,7 +49,6 @@
             display: flex;
             flex-direction: column;
             
-            /* ▼ Safariの見切れ対策：bodyを画面に完全固定し、ページ全体がスクロールするのを防ぐ ▼ */
             position: fixed;
             top: 0;
             left: 0;
@@ -73,7 +72,6 @@
             z-index: 20;
             display: flex;
             flex-direction: column;
-            /* 上部のセーフエリア（ノッチ等）への対応 */
             padding-top: env(safe-area-inset-top);
         }
 
@@ -145,9 +143,19 @@
             left: 0;
             width: 100%;
             z-index: 20;
-            /* ▼ 下部のセーフエリア（iPhoneのホームバーなど）を考慮したパディング ▼ */
             padding-bottom: env(safe-area-inset-bottom);
             transition: opacity 0.25s ease-in-out;
+        }
+
+        /* ▼ 追加：右端の矢印キーをまとめるコンテナ ▼ */
+        .arrow-keys {
+            display: flex;
+            gap: 2px;
+            margin-left: auto; /* 左側の要素を押しのけて右端に寄せる */
+        }
+        .arrow-btn {
+            font-size: 1.1rem; /* 矢印の文字サイズを少し大きく */
+            font-weight: bold;
         }
 
         .fade-out {
@@ -216,7 +224,6 @@
             flex-grow: 1;
             width: 100%;
             height: 100%;
-            /* ▼ 下部パディングにもセーフエリア分を加算し、テキストが隠れないようにする ▼ */
             padding: 75px 15px calc(50px + env(safe-area-inset-bottom)) 15px;
             font-family: inherit;
             border: none;
@@ -226,8 +233,6 @@
             background-color: transparent;
             color: var(--text-color);
             caret-color: var(--text-color);
-            
-            /* ▼ bodyを固定したため、テキストエリア自体にスクロールバーを出す ▼ */
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -287,6 +292,13 @@
         <button id="btnCopy" class="tool-btn" title="コピー"><span class="icon icon-copy"></span></button>
         <button id="btnPaste" class="tool-btn" title="ペースト"><span class="icon icon-paste"></span></button>
         <button id="btnPartialSelect" class="tool-btn" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
+        
+        <div class="arrow-keys">
+            <button id="btnArrowLeft" class="tool-btn arrow-btn">←</button>
+            <button id="btnArrowUp" class="tool-btn arrow-btn">↑</button>
+            <button id="btnArrowDown" class="tool-btn arrow-btn">↓</button>
+            <button id="btnArrowRight" class="tool-btn arrow-btn">→</button>
+        </div>
     </div>
 
     <div id="toast"></div>
@@ -314,7 +326,6 @@
 
             const adjustToolbarPosition = () => {
                 const vv = window.visualViewport;
-                // paddingを追加したため高さを正確に取得
                 const tbHeight = bottomToolbar.offsetHeight || 41; 
                 
                 const topVal = vv.offsetTop + vv.height - tbHeight;
@@ -442,15 +453,13 @@
             memoArea.focus();
         });
 
-        // --- ▼ コピー処理（非アクティブ時のフォーカス復帰防止） ▼ ---
+        // --- コピー処理 ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
             const currentText = memoArea.value;
             const isTextSelected = start !== end;
             
-            // ボタンが押される直前にテキストエリアがアクティブだったか判定
-            // (mousedown時の e.preventDefault() のおかげで正確に判定できます)
             const isActive = document.activeElement === memoArea;
             
             try {
@@ -513,12 +522,74 @@
         document.getElementById('btnPartialSelect').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
-            
             if (start > 0) {
                 memoArea.setSelectionRange(start - 1, end);
             }
             memoArea.focus();
         });
+
+        // --- ▼ 矢印キー（カーソル移動）の処理 ▼ ---
+        document.getElementById('btnArrowLeft').addEventListener('click', () => {
+            const start = memoArea.selectionStart;
+            if (start > 0) {
+                memoArea.setSelectionRange(start - 1, start - 1);
+            }
+            memoArea.focus();
+        });
+
+        document.getElementById('btnArrowRight').addEventListener('click', () => {
+            const end = memoArea.selectionEnd;
+            if (end < memoArea.value.length) {
+                memoArea.setSelectionRange(end + 1, end + 1);
+            }
+            memoArea.focus();
+        });
+
+        document.getElementById('btnArrowUp').addEventListener('click', () => {
+            const val = memoArea.value;
+            const start = memoArea.selectionStart;
+            // 現在の行の開始位置を特定
+            const currentLineStart = val.lastIndexOf('\n', start - 1) + 1;
+            const prevLineEnd = currentLineStart - 1;
+            
+            if (prevLineEnd >= 0) {
+                // 前の行の開始位置を特定
+                const prevLineStart = val.lastIndexOf('\n', prevLineEnd - 1) + 1;
+                const column = start - currentLineStart;
+                // 前の行の同じ列(または行末)に移動
+                const newPos = Math.min(prevLineStart + column, prevLineEnd);
+                memoArea.setSelectionRange(newPos, newPos);
+            } else {
+                // 1行目の場合は先頭へ
+                memoArea.setSelectionRange(0, 0);
+            }
+            memoArea.focus();
+        });
+
+        document.getElementById('btnArrowDown').addEventListener('click', () => {
+            const val = memoArea.value;
+            const start = memoArea.selectionStart;
+            // 現在の行の開始位置と終了位置を特定
+            const currentLineStart = val.lastIndexOf('\n', start - 1) + 1;
+            const currentLineEnd = val.indexOf('\n', start);
+            const actualCurrentLineEnd = currentLineEnd === -1 ? val.length : currentLineEnd;
+            const column = start - currentLineStart;
+
+            if (currentLineEnd !== -1) {
+                // 次の行の開始位置と終了位置を特定
+                const nextLineStart = currentLineEnd + 1;
+                const nextLineEnd = val.indexOf('\n', nextLineStart);
+                const actualNextLineEnd = nextLineEnd === -1 ? val.length : nextLineEnd;
+                // 次の行の同じ列(または行末)に移動
+                const newPos = Math.min(nextLineStart + column, actualNextLineEnd);
+                memoArea.setSelectionRange(newPos, newPos);
+            } else {
+                // 最後の行の場合は末尾へ
+                memoArea.setSelectionRange(val.length, val.length);
+            }
+            memoArea.focus();
+        });
+        // --- ▲ ここまで ▲ ---
 
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
@@ -553,7 +624,6 @@
             saveToLocal('settings');
         });
 
-        // --- ▼ アプリ初期化 (初期フォーカス処理) ▼ ---
         window.addEventListener('DOMContentLoaded', () => {
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
@@ -576,7 +646,6 @@
             
             memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
             
-            // 処理が完了した直後に、確実にフォーカスを当てて末尾にカーソルを置く
             setTimeout(() => {
                 memoArea.focus();
                 const len = memoArea.value.length;
