@@ -13,8 +13,8 @@
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
-            --toolbar-bg-transparent: rgba(248, 249, 250, 0.1);
-            --tab-bg-transparent: rgba(226, 230, 234, 0.1);
+            --toolbar-bg-transparent: rgba(248, 249, 250, 0.8);
+            --tab-bg-transparent: rgba(226, 230, 234, 0.8);
             
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
@@ -30,8 +30,8 @@
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
 
-                --toolbar-bg-transparent: rgba(22, 31, 39, 0.1);
-                --tab-bg-transparent: rgba(13, 18, 23, 0.1);
+                --toolbar-bg-transparent: rgba(22, 31, 39, 0.8);
+                --tab-bg-transparent: rgba(13, 18, 23, 0.8);
 
                 --btn-active-bg-color: rgba(255, 255, 255, 0.1);
                 --btn-danger-color: #ff6b6b;
@@ -42,12 +42,11 @@
         }
 
         /* --- 基本スタイル --- */
+        /* ▼ Safari対策：bodyを完全固定し、Flexboxで画面を分割する ▼ */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
             
             position: fixed;
             top: 0;
@@ -56,31 +55,32 @@
             bottom: 0;
             width: 100%;
             height: 100dvh;
-            overflow: hidden;
+            overflow: hidden; /* body全体のスクロールを禁止 */
+            
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
             
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* --- 上部固定コンテナ --- */
+        /* --- 上部コンテナ (ヘッダー領域) --- */
         .top-container {
-            position: fixed;
-            top: 0;
-            left: 0;
+            flex-shrink: 0; /* 縮まないように固定 */
             width: 100%;
-            z-index: 20;
             display: flex;
             flex-direction: column;
             padding-top: env(safe-area-inset-top);
+            z-index: 20;
+            background-color: var(--bg-color);
         }
 
         /* --- タブバー --- */
         .tab-bar {
             display: flex;
             background-color: var(--tab-bg-transparent);
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
             padding: 0 4px 0 4px;
             gap: 4px;
             flex-shrink: 0;
@@ -114,8 +114,6 @@
         /* --- ツールバー共通 --- */
         .toolbar {
             background-color: var(--toolbar-bg-transparent);
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -136,16 +134,15 @@
 
         /* --- 下部ツールバー --- */
         .bottom-toolbar {
+            flex-shrink: 0; /* 縮まないように固定 */
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
-            position: fixed;
-            bottom: 0;
-            left: 0;
             width: 100%;
             z-index: 20;
+            /* ボトムセーフエリアの考慮 */
             padding-bottom: env(safe-area-inset-bottom);
-            /* ▼ 位置移動を滑らかにするため、transformアニメーションを追加 ▼ */
-            transition: opacity 0.25s ease-in-out, transform 0.1s ease-out;
+            transition: opacity 0.25s ease-in-out;
+            background-color: var(--bg-color);
         }
 
         .arrow-keys {
@@ -219,23 +216,24 @@
         .icon-paste { -webkit-mask-image: url('assets/paste.svg'); mask-image: url('assets/paste.svg'); }
         .icon-partial-select { -webkit-mask-image: url('assets/partial-select.svg'); mask-image: url('assets/partial-select.svg'); }
 
-        /* --- テキストエリア (全画面) --- */
+        /* --- テキストエリア --- */
         #memoArea {
+            /* ▼ Flexboxにより、残りの空間(ヘッダーとフッターの間)をすべて埋める ▼ */
             flex-grow: 1;
             width: 100%;
-            height: 100%;
-            padding: 75px 15px calc(50px + env(safe-area-inset-bottom)) 15px;
+            /* 上下のツールバーと被らないため、paddingは標準的な値のみでOK */
+            padding: 15px;
             
-            /* ▼ 修正：上下移動を正確にするため、等幅フォント(monospace)を強制適用 ▼ */
             font-family: 'Courier New', Consolas, Monaco, 'Osaka-等幅', 'ＭＳ ゴシック', monospace;
-            
             border: none;
             outline: none;
             resize: none;
             box-sizing: border-box;
-            background-color: transparent;
+            background-color: var(--textarea-bg-color);
             color: var(--text-color);
             caret-color: var(--text-color);
+            
+            /* テキストエリアの内側だけがスクロールする */
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -243,10 +241,10 @@
         /* --- トースト通知 --- */
         #toast {
             position: fixed;
-            bottom: 0;
             left: 50%;
-            /* transformで位置を制御するため、初期値を設定 */
-            transform: translateX(-50%) translateY(-60px);
+            transform: translateX(-50%);
+            /* 初期位置はJavaScriptで制御 */
+            bottom: 0;
             background-color: var(--toast-bg-color);
             color: var(--toast-text-color);
             padding: 10px 20px;
@@ -255,7 +253,7 @@
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease-out, visibility 0.3s ease-out, transform 0.1s ease-out;
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
             pointer-events: none;
             white-space: nowrap;
         }
@@ -293,7 +291,7 @@
         </div>
     </div>
 
-    <textarea id="memoArea" placeholder="ここにメモを入力..." autofocus></textarea>
+    <textarea id="memoArea" placeholder="ここにメモを入力..."></textarea>
 
     <div class="toolbar bottom-toolbar">
         <button id="btnCopy" class="tool-btn" title="コピー"><span class="icon icon-copy"></span></button>
@@ -326,20 +324,22 @@
         };
         let isProgrammaticChange = false;
 
-        // --- ▼ 修正：Safariでの「上がりすぎ問題」を防ぐ、安全なtransform追従 ▼ ---
+        // --- ▼ 修正：画面下部からの圧迫による完璧なレイアウト追従 ▼ ---
         if (window.visualViewport) {
             let lastViewportHeight = window.visualViewport.height;
             let resizeTimer;
 
-            const adjustToolbarPosition = () => {
+            const adjustLayout = () => {
                 const vv = window.visualViewport;
-                // 画面全体の高さから、実際に見えている高さ(キーボードを引いた分)を計算
-                const keyboardHeight = window.innerHeight - vv.height;
+                // 見えている領域の最下部が、画面全体のどれくらい上にあるかを計算 (＝キーボードの高さ)
+                const offsetBottom = window.innerHeight - (vv.offsetTop + vv.height);
                 
-                // bottom: 0 を基準とし、キーボードの高さ分だけ上に押し上げる(transform)
-                // offsetTopを使わないため、画面全体がスクロールしても二重に移動しません
-                bottomToolbar.style.transform = `translateY(-${Math.max(0, keyboardHeight)}px)`;
-                toast.style.transform = `translateX(-50%) translateY(-${Math.max(0, keyboardHeight) + 60}px)`;
+                // bodyのpadding-bottomに設定することで、Flexbox全体を下から押し上げる
+                document.body.style.paddingBottom = `${Math.max(0, offsetBottom)}px`;
+                
+                // トーストは下部ツールバーの上に配置
+                const tbHeight = bottomToolbar.offsetHeight || 41;
+                toast.style.bottom = `${Math.max(0, offsetBottom) + tbHeight + 10}px`;
             };
 
             window.visualViewport.addEventListener('resize', () => {
@@ -355,11 +355,11 @@
                     }, 350); 
                 }
                 lastViewportHeight = currentHeight;
-                adjustToolbarPosition();
+                adjustLayout();
             });
 
-            window.visualViewport.addEventListener('scroll', adjustToolbarPosition);
-            setTimeout(adjustToolbarPosition, 100);
+            window.visualViewport.addEventListener('scroll', adjustLayout);
+            setTimeout(adjustLayout, 100);
         }
 
         // --- mousedownでのフォーカス外れ防止処理 ---
@@ -371,9 +371,8 @@
             });
         });
 
-        // --- 追加：Infoボタンのアラート表示 ---
         document.getElementById('btnInfo').addEventListener('click', () => {
-            alert("オフラインメモ アプリ\nバージョン: v17\n\n機能:\n・3タブ切替\n・自動保存\n・キーボード追従\n・高度なカーソル移動");
+            alert("オフラインメモ アプリ\nバージョン: v18\n\n機能:\n・3タブ切替\n・自動保存\n・完全固定レイアウト\n・高度なカーソル移動");
         });
 
         let toastTimer;
@@ -461,11 +460,14 @@
             memoArea.focus();
         });
 
+        // --- ▼ コピー処理（非アクティブ時はアクティブにしない） ▼ ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
             const currentText = memoArea.value;
             const isTextSelected = start !== end;
+            
+            // mousedownでpreventDefaultしているため、この時点でのアクティブ要素が正確に取得できる
             const isActive = document.activeElement === memoArea;
             
             try {
@@ -473,18 +475,18 @@
                     const selectedText = currentText.substring(start, end);
                     await navigator.clipboard.writeText(selectedText);
                     showToast('選択部分をコピーしました');
-                    if (isActive) {
-                        memoArea.focus();
-                        memoArea.setSelectionRange(start, end);
-                    }
                 } else {
                     await navigator.clipboard.writeText(currentText);
                     showToast('全文をコピーしました');
-                    if (isActive) memoArea.focus();
                 }
             } catch (err) {
                 showToast('コピーに失敗しました');
-                if (isActive) memoArea.focus();
+            } finally {
+                // アクティブだった場合のみフォーカスを復帰させる
+                if (isActive) {
+                    memoArea.focus();
+                    if (isTextSelected) memoArea.setSelectionRange(start, end);
+                }
             }
         });
 
@@ -503,7 +505,7 @@
                 const newCursorPos = start + text.length;
                 memoArea.setSelectionRange(newCursorPos, newCursorPos);
                 
-                memoArea.focus();
+                memoArea.focus(); // ペーストした場合は入力意思があるのでフォーカスする
                 saveState();
                 showToast('ペーストしました');
             } catch (err) {
@@ -526,15 +528,13 @@
             memoArea.focus();
         });
 
-        // --- ▼ 修正：等幅フォントを前提とした正確な行移動ロジック ▼ ---
+        // --- 矢印キーロジック ---
         function getDynamicCharsPerLine() {
             const style = window.getComputedStyle(memoArea);
             const paddingLeft = parseFloat(style.paddingLeft);
             const paddingRight = parseFloat(style.paddingRight);
             const availableWidth = memoArea.clientWidth - paddingLeft - paddingRight;
             const fontSize = parseFloat(style.fontSize);
-            
-            // 等幅フォント(monospace)により、平均文字幅を fontSize の0.95倍と仮定して計算
             return Math.max(1, Math.floor(availableWidth / (fontSize * 0.95)));
         }
 
@@ -554,17 +554,14 @@
             const val = memoArea.value;
             const start = memoArea.selectionStart;
             const charsPerLine = getDynamicCharsPerLine();
-
             const prevNewline = val.lastIndexOf('\n', start - 1);
             const currentLineStart = prevNewline + 1;
             const charsInCurrentLine = start - currentLineStart;
 
-            // 長い行の途中にいる場合
             if (charsInCurrentLine >= charsPerLine) {
                 const newPos = start - charsPerLine;
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                // 前の行へ移動
                 if (prevNewline >= 0) {
                     const prevPrevNewline = val.lastIndexOf('\n', prevNewline - 1);
                     const prevLineStart = prevPrevNewline + 1;
@@ -589,7 +586,6 @@
             const val = memoArea.value;
             const start = memoArea.selectionStart;
             const charsPerLine = getDynamicCharsPerLine();
-
             const nextNewline = val.indexOf('\n', start);
             const actualNextNewline = nextNewline === -1 ? val.length : nextNewline;
             
@@ -598,12 +594,10 @@
             const charsInCurrentLine = start - currentLineStart;
             const distanceToEndOfLine = actualNextNewline - start;
 
-            // 長い行の途中にいる場合
             if (distanceToEndOfLine >= charsPerLine) {
                 const newPos = start + charsPerLine;
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                // 次の行へ移動
                 if (nextNewline !== -1) {
                     const nextNextNewline = val.indexOf('\n', nextNewline + 1);
                     const endOfNextLine = nextNextNewline === -1 ? val.length : nextNextNewline;
@@ -652,6 +646,7 @@
             saveToLocal('settings');
         });
 
+        // --- ▼ 初期フォーカス処理 (同期実行に変更) ▼ ---
         window.addEventListener('DOMContentLoaded', () => {
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
@@ -672,11 +667,10 @@
             
             memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
             
-            setTimeout(() => {
-                memoArea.focus();
-                const len = memoArea.value.length;
-                memoArea.setSelectionRange(len, len);
-            }, 50);
+            // DOMロード時に即座にフォーカスを当てる（setTimeoutを排除）
+            memoArea.focus();
+            const len = memoArea.value.length;
+            memoArea.setSelectionRange(len, len);
         });
 
         if ('serviceWorker' in navigator) {
