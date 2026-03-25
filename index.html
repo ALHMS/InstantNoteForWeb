@@ -6,15 +6,18 @@
     <title>オフラインメモ</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        /* --- 変数定義 (色の設定) --- */
+        /* --- 変数定義 (デフォルトのライトモード) --- */
         :root {
             --bg-color: #ffffff;
             --text-color: #333333;
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
+            --header-bg-color: #f8f9fa;
+            --tab-bg: #e2e6ea;
+            --tab-active-bg: #f8f9fa;
             
-            --toolbar-bg-transparent: rgba(248, 249, 250, 0.1);
-            --tab-bg-transparent: rgba(226, 230, 234, 0.1);
+            /* ▼ 下部ツールバーのみ：透明度70% (アルファ値 0.3) ▼ */
+            --bottom-toolbar-bg: rgba(248, 249, 250, 0.3);
             
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
@@ -23,22 +26,54 @@
             --toast-text-color: #ffffff;
         }
 
+        /* --- ダークモード (OS設定) --- */
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #10171d; 
                 --textarea-bg-color: #10171d;
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
-
-                --toolbar-bg-transparent: rgba(22, 31, 39, 0.1);
-                --tab-bg-transparent: rgba(13, 18, 23, 0.1);
-
+                --header-bg-color: #161f27;
+                --tab-bg: #0d1217;
+                --tab-active-bg: #161f27;
+                --bottom-toolbar-bg: rgba(22, 31, 39, 0.3);
                 --btn-active-bg-color: rgba(255, 255, 255, 0.1);
                 --btn-danger-color: #ff6b6b;
-
                 --toast-bg-color: rgba(230, 241, 255, 0.95);
                 --toast-text-color: #10171d;
             }
+        }
+
+        /* --- 強制ライトモード (ボタン切替用) --- */
+        body.force-light {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --textarea-bg-color: #ffffff;
+            --border-color: #e0e0e0;
+            --header-bg-color: #f8f9fa;
+            --tab-bg: #e2e6ea;
+            --tab-active-bg: #f8f9fa;
+            --bottom-toolbar-bg: rgba(248, 249, 250, 0.3);
+            --btn-active-bg-color: rgba(0, 0, 0, 0.05);
+            --btn-danger-color: #dc3545;
+            --toast-bg-color: rgba(50, 50, 50, 0.9);
+            --toast-text-color: #ffffff;
+        }
+
+        /* --- 強制ダークモード (ボタン切替用) --- */
+        body.force-dark {
+            --bg-color: #10171d; 
+            --textarea-bg-color: #10171d;
+            --border-color: #2a3b4c;
+            --text-color: #e6f1ff; 
+            --header-bg-color: #161f27;
+            --tab-bg: #0d1217;
+            --tab-active-bg: #161f27;
+            --bottom-toolbar-bg: rgba(22, 31, 39, 0.3);
+            --btn-active-bg-color: rgba(255, 255, 255, 0.1);
+            --btn-danger-color: #ff6b6b;
+            --toast-bg-color: rgba(230, 241, 255, 0.95);
+            --toast-text-color: #10171d;
         }
 
         /* --- 基本スタイル --- */
@@ -46,14 +81,11 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 0;
-            
-            /* ▼ 画面自体を完全に固定し、裏側でのスクロールを一切許さない ▼ */
             position: fixed;
-            inset: 0; /* top:0, left:0, right:0, bottom:0 と同じ */
+            inset: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s, color 0.3s;
@@ -61,7 +93,6 @@
 
         /* --- 上部コンテナ (ヘッダー領域) --- */
         .top-container {
-            /* ▼ 提案通り position: absolute で完全に分離 ▼ */
             position: absolute;
             left: 0;
             width: 100%;
@@ -69,15 +100,14 @@
             display: flex;
             flex-direction: column;
             padding-top: env(safe-area-inset-top);
-            /* background-color: var(--bg-color); */ /* 透け感を出すために削除 */
+            /* 不透明（ベタ塗り）に変更 */
+            background-color: var(--header-bg-color);
         }
 
         /* --- タブバー --- */
         .tab-bar {
             display: flex;
-            background-color: var(--tab-bg-transparent);
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
+            background-color: var(--tab-bg); /* 不透明 */
             padding: 0 4px 0 4px;
             gap: 4px;
             overflow-x: auto;
@@ -103,15 +133,12 @@
             white-space: nowrap;
         }
         .tab.active {
-            background-color: var(--toolbar-bg-transparent);
+            background-color: var(--tab-active-bg); /* 不透明 */
             opacity: 1;
         }
 
         /* --- ツールバー共通 --- */
         .toolbar {
-            background-color: var(--toolbar-bg-transparent);
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -121,6 +148,7 @@
 
         /* --- 上部ツールバー --- */
         .top-toolbar {
+            background-color: var(--tab-active-bg); /* 不透明 */
             border-bottom: 1px solid var(--border-color);
             overflow-x: auto;
             white-space: nowrap;
@@ -129,9 +157,8 @@
         }
         .top-toolbar::-webkit-scrollbar { display: none; }
 
-        /* --- 下部ツールバー --- */
+        /* --- 下部ツールバー (ここだけすりガラス) --- */
         .bottom-toolbar {
-            /* ▼ 提案通り position: absolute で完全に分離 ▼ */
             position: absolute;
             left: 0;
             width: 100%;
@@ -139,8 +166,12 @@
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
             padding-bottom: env(safe-area-inset-bottom);
-            /* 位置(top)はJSで即時反映するため、opacityのみアニメーション */
             transition: opacity 0.25s ease-in-out;
+            
+            /* ▼ 下部のみ半透明＋ブラー1px ▼ */
+            background-color: var(--bottom-toolbar-bg);
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
         }
 
         .arrow-keys {
@@ -163,6 +194,7 @@
             height: 24px;
             background-color: var(--border-color);
             margin: 0 4px;
+            flex-shrink: 0;
         }
 
         /* --- UIパーツ --- */
@@ -214,13 +246,10 @@
 
         /* --- テキストエリア --- */
         #memoArea {
-            /* ▼ ヘッダーとフッターの間に position: absolute で動的に配置 ▼ */
             position: absolute;
             left: 0;
             width: 100%;
-            /* 上下のpaddingでごまかさず、純粋な内側の余白のみ設定 */
             padding: 10px 15px;
-            
             font-family: 'Courier New', Consolas, Monaco, 'Osaka-等幅', 'ＭＳ ゴシック', monospace;
             border: none;
             outline: none;
@@ -229,14 +258,13 @@
             background-color: var(--textarea-bg-color);
             color: var(--text-color);
             caret-color: var(--text-color);
-            
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
         /* --- トースト通知 --- */
         #toast {
-            position: absolute; /* fixedから変更 */
+            position: absolute; 
             left: 50%;
             transform: translateX(-50%);
             background-color: var(--toast-bg-color);
@@ -281,6 +309,8 @@
                 <span>保存</span>
             </label>
             
+            <button id="btnTheme" class="tool-btn" title="テーマ切替">🌓</button>
+            
             <button id="btnInfo" class="tool-btn" style="margin-left: auto;" title="情報">ℹ️</button>
         </div>
     </div>
@@ -306,6 +336,7 @@
         const memoArea = document.getElementById('memoArea');
         const saveToggle = document.getElementById('saveToggle');
         const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const btnTheme = document.getElementById('btnTheme');
         const toast = document.getElementById('toast');
         const bottomToolbar = document.querySelector('.bottom-toolbar');
         const topContainer = document.querySelector('.top-container');
@@ -319,7 +350,7 @@
         };
         let isProgrammaticChange = false;
 
-        // --- ▼ 修正：完全分離（Absolute配置）による完璧なレイアウト追従 ▼ ---
+        // --- レイアウト追従処理 ---
         let adjustLayout = () => {};
 
         if (window.visualViewport) {
@@ -328,33 +359,25 @@
 
             adjustLayout = () => {
                 const vv = window.visualViewport;
-                // 表示領域の絶対座標
                 const viewTop = vv.offsetTop;
                 const viewHeight = vv.height;
                 
-                // ヘッダーとツールバーの高さを取得
                 const topHeight = topContainer.offsetHeight || 80;
                 const tbHeight = bottomToolbar.offsetHeight || 45;
                 
-                // 1. ヘッダーを画面上部に絶対配置（ラバーバンドでも見切れない）
                 topContainer.style.top = `${viewTop}px`;
                 
-                // 2. ツールバーを画面下部に絶対配置
                 const toolbarTop = viewTop + viewHeight - tbHeight;
                 bottomToolbar.style.top = `${toolbarTop}px`;
                 
-                // 3. テキストエリアをヘッダーとツールバーの間に絶対配置で収める
-                // これにより、キーボードが出てもスクロール領域が完全に守られる
                 memoArea.style.top = `${viewTop + topHeight}px`;
                 memoArea.style.height = `${viewHeight - topHeight - tbHeight}px`;
                 
-                // 4. トーストの位置
                 toast.style.top = `${toolbarTop - 60}px`;
             };
 
             window.visualViewport.addEventListener('resize', () => {
                 const currentHeight = window.visualViewport.height;
-                // キーボード開閉アニメーション中の処理
                 if (Math.abs(currentHeight - lastViewportHeight) > 40) {
                     bottomToolbar.classList.add('fade-out');
                     toast.classList.add('fade-out');
@@ -369,11 +392,9 @@
                 adjustLayout();
             });
 
-            // スクロール時も瞬時に座標を再計算して追従させる
             window.visualViewport.addEventListener('scroll', adjustLayout);
             window.addEventListener('scroll', adjustLayout); 
             
-            // 初回計算
             requestAnimationFrame(adjustLayout);
             setTimeout(adjustLayout, 100);
         }
@@ -388,8 +409,41 @@
         });
 
         document.getElementById('btnInfo').addEventListener('click', () => {
-            alert("オフラインメモ アプリ\nバージョン: v19\n\n機能:\n・完全Absolute配置(崩れ防止)\n・3タブ切替\n・自動保存\n・高度なカーソル移動");
+            alert("オフラインメモ アプリ\nバージョン: v20\n\n機能:\n・テーマ切替\n・高度なカーソル移動\n・完全Absoluteレイアウト");
         });
+
+        // --- ▼ テーマ切り替えロジック ▼ ---
+        function applyTheme(themeName) {
+            document.body.classList.remove('force-light', 'force-dark');
+            if (themeName) {
+                document.body.classList.add(`force-${themeName}`);
+            }
+        }
+
+        btnTheme.addEventListener('click', () => {
+            const isDarkOS = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isForceDark = document.body.classList.contains('force-dark');
+            const isForceLight = document.body.classList.contains('force-light');
+            
+            let isCurrentlyDark = isForceDark || (!isForceLight && isDarkOS);
+            
+            if (isCurrentlyDark) {
+                applyTheme('light');
+                localStorage.setItem('memo_theme', 'light');
+                showToast('ライトモードに切り替えました');
+            } else {
+                applyTheme('dark');
+                localStorage.setItem('memo_theme', 'dark');
+                showToast('ダークモードに切り替えました');
+            }
+        });
+
+        // 初期ロード時にテーマを復元
+        const savedTheme = localStorage.getItem('memo_theme');
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        }
+        // --- ▲ テーマロジックここまで ▲ ---
 
         let toastTimer;
         function showToast(message) {
@@ -540,14 +594,16 @@
             memoArea.focus();
         });
 
-        // --- 矢印キーロジック ---
+        // --- ▼ 修正：改行に対応した完璧な矢印キーロジック ▼ ---
         function getDynamicCharsPerLine() {
             const style = window.getComputedStyle(memoArea);
             const paddingLeft = parseFloat(style.paddingLeft);
             const paddingRight = parseFloat(style.paddingRight);
             const availableWidth = memoArea.clientWidth - paddingLeft - paddingRight;
+            
+            // 日本語(全角)など等幅のベースとして fontSize をそのまま割る
             const fontSize = parseFloat(style.fontSize);
-            return Math.max(1, Math.floor(availableWidth / (fontSize * 0.95)));
+            return Math.max(1, Math.floor(availableWidth / fontSize));
         }
 
         document.getElementById('btnArrowLeft').addEventListener('click', () => {
@@ -566,29 +622,34 @@
             const val = memoArea.value;
             const start = memoArea.selectionStart;
             const charsPerLine = getDynamicCharsPerLine();
-            const prevNewline = val.lastIndexOf('\n', start - 1);
-            const currentLineStart = prevNewline + 1;
-            const charsInCurrentLine = start - currentLineStart;
 
-            if (charsInCurrentLine >= charsPerLine) {
+            // 直前の実改行(\n)を探す
+            const prevNewline = val.lastIndexOf('\n', start - 1);
+            const logicalLineStart = prevNewline + 1;
+            const offsetInLogicalLine = start - logicalLineStart;
+
+            // 同じ論理行内の上の表示行へ
+            if (offsetInLogicalLine >= charsPerLine) {
                 const newPos = start - charsPerLine;
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
+                // 1つ上の論理行へ
                 if (prevNewline >= 0) {
                     const prevPrevNewline = val.lastIndexOf('\n', prevNewline - 1);
-                    const prevLineStart = prevPrevNewline + 1;
-                    const prevLineLength = prevNewline - prevLineStart;
-                    const column = charsInCurrentLine % charsPerLine;
+                    const prevLogicalLineStart = prevPrevNewline + 1;
+                    const prevLogicalLineLength = prevNewline - prevLogicalLineStart;
                     
-                    let visualLineStartOffset = prevLineLength - (prevLineLength % charsPerLine);
-                    if (visualLineStartOffset === prevLineLength && prevLineLength > 0) {
-                        visualLineStartOffset -= charsPerLine;
+                    // 前の論理行の「最後の表示行」の開始位置を算出
+                    let lastVisualLineOffset = Math.floor(prevLogicalLineLength / charsPerLine) * charsPerLine;
+                    if (lastVisualLineOffset === prevLogicalLineLength && prevLogicalLineLength > 0) {
+                        lastVisualLineOffset -= charsPerLine;
                     }
                     
-                    const newPos = prevLineStart + Math.min(visualLineStartOffset + column, prevLineLength);
+                    const column = offsetInLogicalLine % charsPerLine;
+                    const newPos = prevLogicalLineStart + Math.min(lastVisualLineOffset + column, prevLogicalLineLength);
                     memoArea.setSelectionRange(newPos, newPos);
                 } else {
-                    memoArea.setSelectionRange(0, 0);
+                    memoArea.setSelectionRange(0, 0); // 先頭
                 }
             }
             memoArea.focus();
@@ -598,33 +659,39 @@
             const val = memoArea.value;
             const start = memoArea.selectionStart;
             const charsPerLine = getDynamicCharsPerLine();
+
+            const prevNewline = val.lastIndexOf('\n', start - 1);
+            const logicalLineStart = prevNewline + 1;
+            const offsetInLogicalLine = start - logicalLineStart;
+
             const nextNewline = val.indexOf('\n', start);
             const actualNextNewline = nextNewline === -1 ? val.length : nextNewline;
-            
-            const prevNewline = val.lastIndexOf('\n', start - 1);
-            const currentLineStart = prevNewline + 1;
-            const charsInCurrentLine = start - currentLineStart;
-            const distanceToEndOfLine = actualNextNewline - start;
+            const logicalLineLength = actualNextNewline - logicalLineStart;
 
-            if (distanceToEndOfLine >= charsPerLine) {
-                const newPos = start + charsPerLine;
+            const column = offsetInLogicalLine % charsPerLine;
+            const currentVisualLineStartOffset = offsetInLogicalLine - column;
+            const nextVisualLineStartOffset = currentVisualLineStartOffset + charsPerLine;
+
+            // 同じ論理行内の下の表示行へ
+            if (nextVisualLineStartOffset <= logicalLineLength) {
+                const newPos = logicalLineStart + Math.min(nextVisualLineStartOffset + column, logicalLineLength);
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
+                // 1つ下の論理行へ
                 if (nextNewline !== -1) {
-                    const nextNextNewline = val.indexOf('\n', nextNewline + 1);
-                    const endOfNextLine = nextNextNewline === -1 ? val.length : nextNextNewline;
-                    const nextLineStart = nextNewline + 1;
-                    const nextLineLength = endOfNextLine - nextLineStart;
+                    const nextLogicalLineStart = nextNewline + 1;
+                    const nextNextNewline = val.indexOf('\n', nextLogicalLineStart);
+                    const nextLogicalLineLength = (nextNextNewline === -1 ? val.length : nextNextNewline) - nextLogicalLineStart;
                     
-                    const column = charsInCurrentLine % charsPerLine;
-                    const newPos = nextLineStart + Math.min(column, nextLineLength);
+                    const newPos = nextLogicalLineStart + Math.min(column, nextLogicalLineLength);
                     memoArea.setSelectionRange(newPos, newPos);
                 } else {
-                    memoArea.setSelectionRange(val.length, val.length);
+                    memoArea.setSelectionRange(val.length, val.length); // 末尾
                 }
             }
             memoArea.focus();
         });
+        // --- ▲ 矢印キーロジックここまで ▲ ---
 
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
@@ -682,7 +749,6 @@
             const len = memoArea.value.length;
             memoArea.setSelectionRange(len, len);
             
-            // レイアウトの初回同期
             if (typeof adjustLayout === 'function') {
                 setTimeout(adjustLayout, 50);
             }
