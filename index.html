@@ -13,8 +13,8 @@
             --textarea-bg-color: #ffffff;
             --border-color: #e0e0e0;
             
-            --toolbar-bg-transparent: rgba(248, 249, 250, 0.8);
-            --tab-bg-transparent: rgba(226, 230, 234, 0.8);
+            --toolbar-bg-transparent: rgba(248, 249, 250, 0.1);
+            --tab-bg-transparent: rgba(226, 230, 234, 0.1);
             
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
@@ -30,8 +30,8 @@
                 --border-color: #2a3b4c;
                 --text-color: #e6f1ff; 
 
-                --toolbar-bg-transparent: rgba(22, 31, 39, 0.8);
-                --tab-bg-transparent: rgba(13, 18, 23, 0.8);
+                --toolbar-bg-transparent: rgba(22, 31, 39, 0.1);
+                --tab-bg-transparent: rgba(13, 18, 23, 0.1);
 
                 --btn-active-bg-color: rgba(255, 255, 255, 0.1);
                 --btn-danger-color: #ff6b6b;
@@ -42,24 +42,17 @@
         }
 
         /* --- 基本スタイル --- */
-        /* ▼ Safari対策：bodyを完全固定し、Flexboxで画面を分割する ▼ */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 0;
             
+            /* ▼ 画面自体を完全に固定し、裏側でのスクロールを一切許さない ▼ */
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0; /* top:0, left:0, right:0, bottom:0 と同じ */
             width: 100%;
-            height: 100dvh;
-            overflow: hidden; /* body全体のスクロールを禁止 */
-            
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
+            height: 100%;
+            overflow: hidden;
             
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -68,22 +61,25 @@
 
         /* --- 上部コンテナ (ヘッダー領域) --- */
         .top-container {
-            flex-shrink: 0; /* 縮まないように固定 */
+            /* ▼ 提案通り position: absolute で完全に分離 ▼ */
+            position: absolute;
+            left: 0;
             width: 100%;
+            z-index: 20;
             display: flex;
             flex-direction: column;
             padding-top: env(safe-area-inset-top);
-            z-index: 20;
-            background-color: var(--bg-color);
+            /* background-color: var(--bg-color); */ /* 透け感を出すために削除 */
         }
 
         /* --- タブバー --- */
         .tab-bar {
             display: flex;
             background-color: var(--tab-bg-transparent);
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
             padding: 0 4px 0 4px;
             gap: 4px;
-            flex-shrink: 0;
             overflow-x: auto;
             -ms-overflow-style: none;
             scrollbar-width: none;
@@ -114,12 +110,13 @@
         /* --- ツールバー共通 --- */
         .toolbar {
             background-color: var(--toolbar-bg-transparent);
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
             display: flex;
             align-items: center;
             gap: 8px;
             padding: 0 8px;
             box-sizing: border-box;
-            flex-shrink: 0;
         }
 
         /* --- 上部ツールバー --- */
@@ -134,15 +131,16 @@
 
         /* --- 下部ツールバー --- */
         .bottom-toolbar {
-            flex-shrink: 0; /* 縮まないように固定 */
-            border-top: 1px solid var(--border-color);
-            justify-content: flex-start;
+            /* ▼ 提案通り position: absolute で完全に分離 ▼ */
+            position: absolute;
+            left: 0;
             width: 100%;
             z-index: 20;
-            /* ボトムセーフエリアの考慮 */
+            border-top: 1px solid var(--border-color);
+            justify-content: flex-start;
             padding-bottom: env(safe-area-inset-bottom);
+            /* 位置(top)はJSで即時反映するため、opacityのみアニメーション */
             transition: opacity 0.25s ease-in-out;
-            background-color: var(--bg-color);
         }
 
         .arrow-keys {
@@ -165,14 +163,13 @@
             height: 24px;
             background-color: var(--border-color);
             margin: 0 4px;
-            flex-shrink: 0;
         }
 
         /* --- UIパーツ --- */
-        .font-size-control { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .font-size-control { display: flex; align-items: center; gap: 4px; }
         #fontSizeSlider { width: 60px; cursor: pointer; }
 
-        .toggle-container { display: flex; align-items: center; font-size: 0.8rem; cursor: pointer; flex-shrink: 0; }
+        .toggle-container { display: flex; align-items: center; font-size: 0.8rem; cursor: pointer; }
         .toggle-container input { margin: 0 4px 0 0; width: 14px; height: 14px; }
 
         button.tool-btn {
@@ -187,7 +184,6 @@
             background-color: transparent;
             color: var(--text-color);
             cursor: pointer;
-            flex-shrink: 0;
             touch-action: manipulation;
             transition: background-color 0.1s;
         }
@@ -218,11 +214,12 @@
 
         /* --- テキストエリア --- */
         #memoArea {
-            /* ▼ Flexboxにより、残りの空間(ヘッダーとフッターの間)をすべて埋める ▼ */
-            flex-grow: 1;
+            /* ▼ ヘッダーとフッターの間に position: absolute で動的に配置 ▼ */
+            position: absolute;
+            left: 0;
             width: 100%;
-            /* 上下のツールバーと被らないため、paddingは標準的な値のみでOK */
-            padding: 15px;
+            /* 上下のpaddingでごまかさず、純粋な内側の余白のみ設定 */
+            padding: 10px 15px;
             
             font-family: 'Courier New', Consolas, Monaco, 'Osaka-等幅', 'ＭＳ ゴシック', monospace;
             border: none;
@@ -233,18 +230,15 @@
             color: var(--text-color);
             caret-color: var(--text-color);
             
-            /* テキストエリアの内側だけがスクロールする */
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
         /* --- トースト通知 --- */
         #toast {
-            position: fixed;
+            position: absolute; /* fixedから変更 */
             left: 50%;
             transform: translateX(-50%);
-            /* 初期位置はJavaScriptで制御 */
-            bottom: 0;
             background-color: var(--toast-bg-color);
             color: var(--toast-text-color);
             padding: 10px 20px;
@@ -314,6 +308,7 @@
         const fontSizeSlider = document.getElementById('fontSizeSlider');
         const toast = document.getElementById('toast');
         const bottomToolbar = document.querySelector('.bottom-toolbar');
+        const topContainer = document.querySelector('.top-container');
         const tabs = document.querySelectorAll('.tab');
         
         let currentTab = 1;
@@ -324,26 +319,42 @@
         };
         let isProgrammaticChange = false;
 
-        // --- ▼ 修正：画面下部からの圧迫による完璧なレイアウト追従 ▼ ---
+        // --- ▼ 修正：完全分離（Absolute配置）による完璧なレイアウト追従 ▼ ---
+        let adjustLayout = () => {};
+
         if (window.visualViewport) {
             let lastViewportHeight = window.visualViewport.height;
             let resizeTimer;
 
-            const adjustLayout = () => {
+            adjustLayout = () => {
                 const vv = window.visualViewport;
-                // 見えている領域の最下部が、画面全体のどれくらい上にあるかを計算 (＝キーボードの高さ)
-                const offsetBottom = window.innerHeight - (vv.offsetTop + vv.height);
+                // 表示領域の絶対座標
+                const viewTop = vv.offsetTop;
+                const viewHeight = vv.height;
                 
-                // bodyのpadding-bottomに設定することで、Flexbox全体を下から押し上げる
-                document.body.style.paddingBottom = `${Math.max(0, offsetBottom)}px`;
+                // ヘッダーとツールバーの高さを取得
+                const topHeight = topContainer.offsetHeight || 80;
+                const tbHeight = bottomToolbar.offsetHeight || 45;
                 
-                // トーストは下部ツールバーの上に配置
-                const tbHeight = bottomToolbar.offsetHeight || 41;
-                toast.style.bottom = `${Math.max(0, offsetBottom) + tbHeight + 10}px`;
+                // 1. ヘッダーを画面上部に絶対配置（ラバーバンドでも見切れない）
+                topContainer.style.top = `${viewTop}px`;
+                
+                // 2. ツールバーを画面下部に絶対配置
+                const toolbarTop = viewTop + viewHeight - tbHeight;
+                bottomToolbar.style.top = `${toolbarTop}px`;
+                
+                // 3. テキストエリアをヘッダーとツールバーの間に絶対配置で収める
+                // これにより、キーボードが出てもスクロール領域が完全に守られる
+                memoArea.style.top = `${viewTop + topHeight}px`;
+                memoArea.style.height = `${viewHeight - topHeight - tbHeight}px`;
+                
+                // 4. トーストの位置
+                toast.style.top = `${toolbarTop - 60}px`;
             };
 
             window.visualViewport.addEventListener('resize', () => {
                 const currentHeight = window.visualViewport.height;
+                // キーボード開閉アニメーション中の処理
                 if (Math.abs(currentHeight - lastViewportHeight) > 40) {
                     bottomToolbar.classList.add('fade-out');
                     toast.classList.add('fade-out');
@@ -358,7 +369,12 @@
                 adjustLayout();
             });
 
+            // スクロール時も瞬時に座標を再計算して追従させる
             window.visualViewport.addEventListener('scroll', adjustLayout);
+            window.addEventListener('scroll', adjustLayout); 
+            
+            // 初回計算
+            requestAnimationFrame(adjustLayout);
             setTimeout(adjustLayout, 100);
         }
 
@@ -372,7 +388,7 @@
         });
 
         document.getElementById('btnInfo').addEventListener('click', () => {
-            alert("オフラインメモ アプリ\nバージョン: v18\n\n機能:\n・3タブ切替\n・自動保存\n・完全固定レイアウト\n・高度なカーソル移動");
+            alert("オフラインメモ アプリ\nバージョン: v19\n\n機能:\n・完全Absolute配置(崩れ防止)\n・3タブ切替\n・自動保存\n・高度なカーソル移動");
         });
 
         let toastTimer;
@@ -460,14 +476,11 @@
             memoArea.focus();
         });
 
-        // --- ▼ コピー処理（非アクティブ時はアクティブにしない） ▼ ---
         document.getElementById('btnCopy').addEventListener('click', async () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
             const currentText = memoArea.value;
             const isTextSelected = start !== end;
-            
-            // mousedownでpreventDefaultしているため、この時点でのアクティブ要素が正確に取得できる
             const isActive = document.activeElement === memoArea;
             
             try {
@@ -482,7 +495,6 @@
             } catch (err) {
                 showToast('コピーに失敗しました');
             } finally {
-                // アクティブだった場合のみフォーカスを復帰させる
                 if (isActive) {
                     memoArea.focus();
                     if (isTextSelected) memoArea.setSelectionRange(start, end);
@@ -505,7 +517,7 @@
                 const newCursorPos = start + text.length;
                 memoArea.setSelectionRange(newCursorPos, newCursorPos);
                 
-                memoArea.focus(); // ペーストした場合は入力意思があるのでフォーカスする
+                memoArea.focus(); 
                 saveState();
                 showToast('ペーストしました');
             } catch (err) {
@@ -646,7 +658,6 @@
             saveToLocal('settings');
         });
 
-        // --- ▼ 初期フォーカス処理 (同期実行に変更) ▼ ---
         window.addEventListener('DOMContentLoaded', () => {
             const savedFontSize = localStorage.getItem('memo_font_size') || '24';
             fontSizeSlider.value = savedFontSize;
@@ -667,10 +678,14 @@
             
             memoArea.value = tabData[currentTab].history[tabData[currentTab].index] || '';
             
-            // DOMロード時に即座にフォーカスを当てる（setTimeoutを排除）
             memoArea.focus();
             const len = memoArea.value.length;
             memoArea.setSelectionRange(len, len);
+            
+            // レイアウトの初回同期
+            if (typeof adjustLayout === 'function') {
+                setTimeout(adjustLayout, 50);
+            }
         });
 
         if ('serviceWorker' in navigator) {

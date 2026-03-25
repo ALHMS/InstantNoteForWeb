@@ -1,5 +1,5 @@
-// ▼ バージョンを v18 に引き上げました ▼
-const CACHE_NAME = 'memo-app-v18';
+// ▼ バージョンを v19 に引き上げました ▼
+const CACHE_NAME = 'memo-app-v19';
 
 const urlsToCache = [
   './',
