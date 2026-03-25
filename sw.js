@@ -1,5 +1,5 @@
-// ▼ バージョンを v14 に引き上げました ▼
-const CACHE_NAME = 'memo-app-v14';
+// ▼ バージョンを v16 に引き上げました ▼
+const CACHE_NAME = 'memo-app-v16';
 
 // オフライン動作用に保存するファイルのリスト
 const urlsToCache = [
@@ -14,7 +14,6 @@ const urlsToCache = [
   './assets/partial-select.svg'
 ];
 
-// インストール時にファイルをキャッシュする
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -25,7 +24,6 @@ self.addEventListener('install', event => {
   self.skipWaiting(); 
 });
 
-// 新しいService Workerが有効になったときに、古いキャッシュを削除する
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -42,7 +40,6 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// ネットワークリクエストをインターセプトしてキャッシュから返す
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)

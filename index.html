@@ -147,14 +147,13 @@
             transition: opacity 0.25s ease-in-out;
         }
 
-        /* ▼ 追加：右端の矢印キーをまとめるコンテナ ▼ */
         .arrow-keys {
             display: flex;
             gap: 2px;
-            margin-left: auto; /* 左側の要素を押しのけて右端に寄せる */
+            margin-left: auto; 
         }
         .arrow-btn {
-            font-size: 1.1rem; /* 矢印の文字サイズを少し大きく */
+            font-size: 1.1rem; 
             font-weight: bold;
         }
 
@@ -327,7 +326,6 @@
             const adjustToolbarPosition = () => {
                 const vv = window.visualViewport;
                 const tbHeight = bottomToolbar.offsetHeight || 41; 
-                
                 const topVal = vv.offsetTop + vv.height - tbHeight;
                 
                 bottomToolbar.style.bottom = 'auto'; 
@@ -339,7 +337,6 @@
 
             window.visualViewport.addEventListener('resize', () => {
                 const currentHeight = window.visualViewport.height;
-                
                 if (Math.abs(currentHeight - lastViewportHeight) > 40) {
                     bottomToolbar.classList.add('fade-out');
                     toast.classList.add('fade-out');
@@ -355,7 +352,6 @@
             });
 
             window.visualViewport.addEventListener('scroll', adjustToolbarPosition);
-            
             setTimeout(adjustToolbarPosition, 100);
         }
 
@@ -459,7 +455,6 @@
             const end = memoArea.selectionEnd;
             const currentText = memoArea.value;
             const isTextSelected = start !== end;
-            
             const isActive = document.activeElement === memoArea;
             
             try {
@@ -467,7 +462,6 @@
                     const selectedText = currentText.substring(start, end);
                     await navigator.clipboard.writeText(selectedText);
                     showToast('選択部分をコピーしました');
-                    
                     if (isActive) {
                         memoArea.focus();
                         memoArea.setSelectionRange(start, end);
@@ -475,10 +469,7 @@
                 } else {
                     await navigator.clipboard.writeText(currentText);
                     showToast('全文をコピーしました');
-                    
-                    if (isActive) {
-                        memoArea.focus();
-                    }
+                    if (isActive) memoArea.focus();
                 }
             } catch (err) {
                 showToast('コピーに失敗しました');
@@ -504,16 +495,14 @@
                 memoArea.focus();
                 saveState();
                 showToast('ペーストしました');
-                
             } catch (err) {
                 const guideMessage = 
                     "クリップボードへのアクセスがブロックされています。\n\n" +
                     "【設定の変更方法】\n" +
-                    "1. アドレスバー（URLの横）のアイコンをタップ\n" +
+                    "1. アドレスバーのアイコンをタップ\n" +
                     "2. 「Webサイトの設定」や「権限」を開く\n" +
                     "3. クリップボードへのアクセスを「許可」に変更\n\n" +
-                    "※設定を変更せずにペーストする場合は、テキストエリアを長押しして標準の「ペースト」を選択してください。";
-                
+                    "※設定を変更せずにペーストする場合は、テキストエリアを長押しして「ペースト」を選択してください。";
                 alert(guideMessage);
                 if (isActive) memoArea.focus();
             }
@@ -522,46 +511,73 @@
         document.getElementById('btnPartialSelect').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             const end = memoArea.selectionEnd;
-            if (start > 0) {
-                memoArea.setSelectionRange(start - 1, end);
-            }
+            if (start > 0) memoArea.setSelectionRange(start - 1, end);
             memoArea.focus();
         });
 
-        // --- ▼ 矢印キー（カーソル移動）の処理 ▼ ---
+        // --- ▼ 矢印キー（動的文字サイズ計算による近似ロジック） ▼ ---
+        
+        // 1行あたりの推定文字数を動的に計算する関数
+        function getDynamicCharsPerLine() {
+            const style = window.getComputedStyle(memoArea);
+            // 左右のパディングを取得して実際の入力可能幅を計算
+            const paddingLeft = parseFloat(style.paddingLeft);
+            const paddingRight = parseFloat(style.paddingRight);
+            const availableWidth = memoArea.clientWidth - paddingLeft - paddingRight;
+            
+            // 現在の文字サイズを取得
+            const fontSize = parseFloat(style.fontSize);
+            
+            // 全角文字（日本語など）を想定し、幅÷文字サイズを1行の文字数とする
+            // 最小値1を担保し、計算エラーを防ぎます
+            return Math.max(1, Math.floor(availableWidth / fontSize));
+        }
+
         document.getElementById('btnArrowLeft').addEventListener('click', () => {
             const start = memoArea.selectionStart;
-            if (start > 0) {
-                memoArea.setSelectionRange(start - 1, start - 1);
-            }
+            if (start > 0) memoArea.setSelectionRange(start - 1, start - 1);
             memoArea.focus();
         });
 
         document.getElementById('btnArrowRight').addEventListener('click', () => {
             const end = memoArea.selectionEnd;
-            if (end < memoArea.value.length) {
-                memoArea.setSelectionRange(end + 1, end + 1);
-            }
+            if (end < memoArea.value.length) memoArea.setSelectionRange(end + 1, end + 1);
             memoArea.focus();
         });
 
         document.getElementById('btnArrowUp').addEventListener('click', () => {
             const val = memoArea.value;
             const start = memoArea.selectionStart;
-            // 現在の行の開始位置を特定
-            const currentLineStart = val.lastIndexOf('\n', start - 1) + 1;
-            const prevLineEnd = currentLineStart - 1;
             
-            if (prevLineEnd >= 0) {
-                // 前の行の開始位置を特定
-                const prevLineStart = val.lastIndexOf('\n', prevLineEnd - 1) + 1;
-                const column = start - currentLineStart;
-                // 前の行の同じ列(または行末)に移動
-                const newPos = Math.min(prevLineStart + column, prevLineEnd);
+            // 現在の文字サイズに基づいた1行の文字数を動的に取得
+            const charsPerLine = getDynamicCharsPerLine();
+
+            const prevNewline = val.lastIndexOf('\n', start - 1);
+            const currentLineStart = prevNewline + 1;
+            const charsInCurrentLine = start - currentLineStart;
+
+            // 長い行の途中にいる場合は、計算した文字数分だけ戻す（見た目上の上の行へ）
+            if (charsInCurrentLine >= charsPerLine) {
+                const newPos = start - charsPerLine;
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                // 1行目の場合は先頭へ
-                memoArea.setSelectionRange(0, 0);
+                // 物理的な前の行へ移動
+                if (prevNewline >= 0) {
+                    const prevPrevNewline = val.lastIndexOf('\n', prevNewline - 1);
+                    const prevLineStart = prevPrevNewline + 1;
+                    const prevLineLength = prevNewline - prevLineStart;
+                    const column = charsInCurrentLine % charsPerLine;
+                    
+                    let visualLineStartOffset = prevLineLength - (prevLineLength % charsPerLine);
+                    if (visualLineStartOffset === prevLineLength && prevLineLength > 0) {
+                        visualLineStartOffset -= charsPerLine;
+                    }
+                    
+                    const newPos = prevLineStart + Math.min(visualLineStartOffset + column, prevLineLength);
+                    memoArea.setSelectionRange(newPos, newPos);
+                } else {
+                    memoArea.setSelectionRange(0, 0); // 先頭へ
+                }
             }
             memoArea.focus();
         });
@@ -569,27 +585,41 @@
         document.getElementById('btnArrowDown').addEventListener('click', () => {
             const val = memoArea.value;
             const start = memoArea.selectionStart;
-            // 現在の行の開始位置と終了位置を特定
-            const currentLineStart = val.lastIndexOf('\n', start - 1) + 1;
-            const currentLineEnd = val.indexOf('\n', start);
-            const actualCurrentLineEnd = currentLineEnd === -1 ? val.length : currentLineEnd;
-            const column = start - currentLineStart;
+            
+            // 現在の文字サイズに基づいた1行の文字数を動的に取得
+            const charsPerLine = getDynamicCharsPerLine();
 
-            if (currentLineEnd !== -1) {
-                // 次の行の開始位置と終了位置を特定
-                const nextLineStart = currentLineEnd + 1;
-                const nextLineEnd = val.indexOf('\n', nextLineStart);
-                const actualNextLineEnd = nextLineEnd === -1 ? val.length : nextLineEnd;
-                // 次の行の同じ列(または行末)に移動
-                const newPos = Math.min(nextLineStart + column, actualNextLineEnd);
+            const nextNewline = val.indexOf('\n', start);
+            const actualNextNewline = nextNewline === -1 ? val.length : nextNewline;
+            
+            const prevNewline = val.lastIndexOf('\n', start - 1);
+            const currentLineStart = prevNewline + 1;
+            const charsInCurrentLine = start - currentLineStart;
+            const distanceToEndOfLine = actualNextNewline - start;
+
+            // 長い行の途中にいる場合は、計算した文字数分だけ進める（見た目上の下の行へ）
+            if (distanceToEndOfLine >= charsPerLine) {
+                const newPos = start + charsPerLine;
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                // 最後の行の場合は末尾へ
-                memoArea.setSelectionRange(val.length, val.length);
+                // 物理的な次の行へ移動
+                if (nextNewline !== -1) {
+                    const nextNextNewline = val.indexOf('\n', nextNewline + 1);
+                    const endOfNextLine = nextNextNewline === -1 ? val.length : nextNextNewline;
+                    const nextLineStart = nextNewline + 1;
+                    const nextLineLength = endOfNextLine - nextLineStart;
+                    
+                    const column = charsInCurrentLine % charsPerLine;
+                    const newPos = nextLineStart + Math.min(column, nextLineLength);
+                    memoArea.setSelectionRange(newPos, newPos);
+                } else {
+                    memoArea.setSelectionRange(val.length, val.length); // 末尾へ
+                }
             }
             memoArea.focus();
         });
-        // --- ▲ ここまで ▲ ---
+
+        // --- ▲ 矢印キーロジックここまで ▲ ---
 
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
@@ -607,7 +637,6 @@
                     localStorage.removeItem(`memo_data_${currentTab}`);
                 }
             }
-            
             if (type === 'settings' || type === 'all') {
                 localStorage.setItem('memo_font_size', fontSizeSlider.value);
             }
@@ -638,9 +667,7 @@
             }
 
             currentTab = parseInt(localStorage.getItem('memo_active_tab')) || 1;
-            
             tabs.forEach(t => t.classList.toggle('active', parseInt(t.dataset.tab) === currentTab));
-            
             const isSaveOn = localStorage.getItem(`memo_save_toggle_${currentTab}`) === 'true';
             saveToggle.checked = isSaveOn;
             
