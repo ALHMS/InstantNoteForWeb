@@ -161,12 +161,16 @@
             z-index: 20;
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
-            /* viewport-fit=cover により、この padding-bottom がPWAでも正しく機能します */
             padding-bottom: env(safe-area-inset-bottom);
-            transition: opacity 0.25s ease-in-out;
+            transition: opacity 0.25s ease-in-out, padding-bottom 0.15s ease-out;
             background-color: var(--bottom-toolbar-bg);
             backdrop-filter: blur(1px);
             -webkit-backdrop-filter: blur(1px);
+        }
+
+        /* ▼ 修正：キーボード出現時（bodyにkeyboard-open付与）は下部余白を0にする ▼ */
+        body.keyboard-open .bottom-toolbar {
+            padding-bottom: 0;
         }
 
         .arrow-keys {
@@ -248,10 +252,7 @@
             padding-top: 10px;
             padding-left: 15px;
             padding-right: 15px;
-            
-            /* ▼ 修正：デバイス設定（body）のフォントを引き継ぐように戻しました ▼ */
             font-family: inherit;
-            
             border: none;
             outline: none;
             resize: none;
@@ -482,8 +483,18 @@
                 const vv = window.visualViewport;
                 const viewTop = vv.offsetTop;
                 const viewHeight = vv.height;
+                const windowHeight = window.innerHeight;
+                
+                // ▼ 修正：キーボードが開いているか（画面が100px以上縮んでいるか）を判定 ▼
+                const isKeyboardOpen = (windowHeight - viewHeight) > 100;
+                if (isKeyboardOpen) {
+                    document.body.classList.add('keyboard-open');
+                } else {
+                    document.body.classList.remove('keyboard-open');
+                }
                 
                 const topHeight = topContainer.offsetHeight || 80;
+                // paddingが変化するため、計算前に最新の高さを取得
                 const tbHeight = bottomToolbar.offsetHeight || 45;
                 
                 topContainer.style.top = `${viewTop}px`;
@@ -539,9 +550,8 @@
             if (e.target === modalOverlay) modalOverlay.classList.remove('show');
         });
 
-        // ▼ バージョン表記を v1.1.0 に更新 ▼
         document.getElementById('btnInfo').addEventListener('click', () => {
-            showModal("オフラインメモ", "バージョン: v1.1.0\n\n機能:\n・PWAセーフエリア完全対応\n・PWA自動更新通知\n・カスタムHTMLモーダル\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
+            showModal("オフラインメモ", "バージョン: v1.1.1\n\n機能:\n・キーボード出現時のUI最適化\n・PWAセーフエリア完全対応\n・PWA自動更新通知\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
         });
 
         // --- テーマ切り替え ---
@@ -720,9 +730,7 @@
             memoArea.focus();
         });
 
-        // --- ▼ 矢印キーロジック（左右移動のみにスッキリ軽量化） ▼ ---
-        
-        // ←← (左へ5文字)
+        // --- 矢印キーロジック ---
         document.getElementById('btnJumpArrowLeft').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             const newPos = Math.max(0, start - 5);
@@ -730,29 +738,24 @@
             memoArea.focus();
         });
 
-        // ← (左へ1文字)
         document.getElementById('btnArrowLeft').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             if (start > 0) memoArea.setSelectionRange(start - 1, start - 1);
             memoArea.focus();
         });
 
-        // → (右へ1文字)
         document.getElementById('btnArrowRight').addEventListener('click', () => {
             const end = memoArea.selectionEnd;
             if (end < memoArea.value.length) memoArea.setSelectionRange(end + 1, end + 1);
             memoArea.focus();
         });
 
-        // →→ (右へ5文字)
         document.getElementById('btnJumpArrowRight').addEventListener('click', () => {
             const end = memoArea.selectionEnd;
             const newPos = Math.min(memoArea.value.length, end + 5);
             memoArea.setSelectionRange(newPos, newPos);
             memoArea.focus();
         });
-
-        // --- ▲ 矢印キーロジックここまで ▲ ---
 
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
