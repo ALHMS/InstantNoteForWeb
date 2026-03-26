@@ -20,8 +20,6 @@
             --btn-danger-color: #dc3545;
             --toast-bg-color: rgba(50, 50, 50, 0.9);
             --toast-text-color: #ffffff;
-            
-            /* モーダル用 */
             --modal-overlay-bg: rgba(0, 0, 0, 0.5);
             --modal-bg: #ffffff;
         }
@@ -40,7 +38,6 @@
                 --btn-danger-color: #ff6b6b;
                 --toast-bg-color: rgba(230, 241, 255, 0.95);
                 --toast-text-color: #10171d;
-                
                 --modal-overlay-bg: rgba(0, 0, 0, 0.7);
                 --modal-bg: #161f27;
             }
@@ -176,10 +173,6 @@
             gap: 2px;
             margin-left: auto; 
         }
-        .arrow-btn {
-            font-size: 1.1rem; 
-            font-weight: bold;
-        }
 
         .fade-out {
             opacity: 0 !important;
@@ -220,6 +213,7 @@
         button.tool-btn.danger { color: var(--btn-danger-color); }
         button.tool-btn.danger:active { background-color: rgba(255, 107, 107, 0.1); }
 
+        /* --- CSS Maskによるアイコン --- */
         .icon {
             display: inline-block;
             width: 20px;
@@ -239,6 +233,13 @@
         .icon-copy { -webkit-mask-image: url('assets/copy.svg'); mask-image: url('assets/copy.svg'); }
         .icon-paste { -webkit-mask-image: url('assets/paste.svg'); mask-image: url('assets/paste.svg'); }
         .icon-partial-select { -webkit-mask-image: url('assets/partial-select.svg'); mask-image: url('assets/partial-select.svg'); }
+        
+        /* ▼ 追加：新しいアイコン用のクラス ▼ */
+        .icon-info { -webkit-mask-image: url('assets/info.svg'); mask-image: url('assets/info.svg'); }
+        .icon-arrow-left { -webkit-mask-image: url('assets/leftArrow.svg'); mask-image: url('assets/leftArrow.svg'); }
+        .icon-jump-arrow-left { -webkit-mask-image: url('assets/jumpLeftArrow.svg'); mask-image: url('assets/jumpLeftArrow.svg'); }
+        .icon-arrow-right { -webkit-mask-image: url('assets/rightArrow.svg'); mask-image: url('assets/rightArrow.svg'); }
+        .icon-jump-arrow-right { -webkit-mask-image: url('assets/jumpRightArrow.svg'); mask-image: url('assets/jumpRightArrow.svg'); }
 
         /* --- テキストエリア --- */
         #memoArea {
@@ -248,7 +249,6 @@
             padding-top: 10px;
             padding-left: 15px;
             padding-right: 15px;
-            
             font-family: 'Courier New', Consolas, Monaco, 'Osaka-等幅', 'ＭＳ ゴシック', monospace;
             border: none;
             outline: none;
@@ -281,6 +281,42 @@
         #toast.show { 
             opacity: 1;
             visibility: visible;
+        }
+
+        /* --- 更新通知トースト --- */
+        #updateToast {
+            position: absolute;
+            top: calc(env(safe-area-inset-top) + 10px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-50px);
+            background-color: var(--toast-bg-color);
+            color: var(--toast-text-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            visibility: hidden;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        #updateToast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+        .btn-update {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 12px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
         }
 
         /* --- カスタムモーダル --- */
@@ -324,7 +360,7 @@
             font-size: 0.9rem;
             margin-bottom: 20px;
             line-height: 1.5;
-            white-space: pre-wrap; /* 改行を反映 */
+            white-space: pre-wrap;
         }
         .modal-btn-wrap {
             display: flex;
@@ -343,6 +379,11 @@
     </style>
 </head>
 <body>
+
+    <div id="updateToast">
+        新しいバージョンがあります
+        <button id="btnDoUpdate" class="btn-update">更新</button>
+    </div>
 
     <div class="top-container">
         <div class="tab-bar" id="tabBar">
@@ -367,7 +408,7 @@
             </label>
             
             <button id="btnTheme" class="tool-btn" title="テーマ切替">🌓</button>
-            <button id="btnInfo" class="tool-btn" style="margin-left: auto;" title="情報">ℹ️</button>
+            <button id="btnInfo" class="tool-btn" style="margin-left: auto;" title="情報"><span class="icon icon-info"></span></button>
         </div>
     </div>
 
@@ -379,10 +420,10 @@
         <button id="btnPartialSelect" class="tool-btn" title="左へ選択拡張"><span class="icon icon-partial-select"></span></button>
         
         <div class="arrow-keys">
-            <button id="btnArrowLeft" class="tool-btn arrow-btn">←</button>
-            <button id="btnArrowUp" class="tool-btn arrow-btn">↑</button>
-            <button id="btnArrowDown" class="tool-btn arrow-btn">↓</button>
-            <button id="btnArrowRight" class="tool-btn arrow-btn">→</button>
+            <button id="btnJumpArrowLeft" class="tool-btn" title="5文字戻る"><span class="icon icon-jump-arrow-left"></span></button>
+            <button id="btnArrowLeft" class="tool-btn" title="1文字戻る"><span class="icon icon-arrow-left"></span></button>
+            <button id="btnArrowRight" class="tool-btn" title="1文字進む"><span class="icon icon-arrow-right"></span></button>
+            <button id="btnJumpArrowRight" class="tool-btn" title="5文字進む"><span class="icon icon-jump-arrow-right"></span></button>
         </div>
     </div>
 
@@ -408,7 +449,6 @@
         const topContainer = document.querySelector('.top-container');
         const tabs = document.querySelectorAll('.tab');
         
-        // モーダル要素
         const modalOverlay = document.getElementById('customModalOverlay');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
@@ -451,7 +491,6 @@
                 
                 memoArea.style.top = `${viewTop + topHeight}px`;
                 memoArea.style.height = `${viewHeight - topHeight}px`;
-                
                 memoArea.style.paddingBottom = `${tbHeight + 10}px`;
                 
                 toast.style.top = `${toolbarTop - 60}px`;
@@ -480,7 +519,6 @@
             setTimeout(adjustLayout, 100);
         }
 
-        // --- mousedownフォーカス外れ防止 ---
         document.querySelectorAll('button.tool-btn, .tab, input[type="range"], input[type="checkbox"]').forEach(el => {
             el.addEventListener('mousedown', (e) => {
                 if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
@@ -489,7 +527,6 @@
             });
         });
 
-        // --- モーダル制御 ---
         function showModal(title, text) {
             modalTitle.textContent = title;
             modalBody.textContent = text;
@@ -501,7 +538,7 @@
         });
 
         document.getElementById('btnInfo').addEventListener('click', () => {
-            showModal("オフラインメモ", "バージョン: v23\n\n機能:\n・カスタムHTMLモーダル\n・半角/全角対応 高度なカーソル移動\n・テーマ切替\n・3タブ切替\n・自動保存\n・完全Absoluteレイアウト");
+            showModal("オフラインメモ", "バージョン: v25\n\n機能:\n・PWA自動更新通知\n・カスタムHTMLモーダル\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
         });
 
         // --- テーマ切り替え ---
@@ -516,7 +553,6 @@
             const isDarkOS = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
             const isForceDark = document.body.classList.contains('force-dark');
             const isForceLight = document.body.classList.contains('force-light');
-            
             let isCurrentlyDark = isForceDark || (!isForceLight && isDarkOS);
             
             if (isCurrentlyDark) {
@@ -614,7 +650,7 @@
             }
             memoArea.value = '';
             saveState(); 
-            showToast('全て破棄しました（Undoで元に戻せます）');
+            showToast('全て破棄しました');
             memoArea.focus();
         });
 
@@ -681,148 +717,39 @@
             memoArea.focus();
         });
 
-        // --- ▼ 修正：半角/全角の文字幅をシミュレーションする超精度の行計算 ▼ ---
+        // --- ▼ 修正：矢印キーロジック（1文字＆5文字ジャンプ） ▼ ---
         
-        // 文字が半角（幅が半分）かどうか判定する関数
-        function isHalfWidth(char) {
-            const code = char.charCodeAt(0);
-            // ASCII文字、半角カタカナを半角とみなす
-            return (code >= 0x0020 && code <= 0x007E) || (code >= 0xFF61 && code <= 0xFF9F);
-        }
+        // ←← (左へ5文字)
+        document.getElementById('btnJumpArrowLeft').addEventListener('click', () => {
+            const start = memoArea.selectionStart;
+            const newPos = Math.max(0, start - 5);
+            memoArea.setSelectionRange(newPos, newPos);
+            memoArea.focus();
+        });
 
-        // テキストを「画面幅ごとの仮想的な行」に分割する関数
-        function getVisualLines(text) {
-            const style = window.getComputedStyle(memoArea);
-            const paddingLeft = parseFloat(style.paddingLeft);
-            const paddingRight = parseFloat(style.paddingRight);
-            const availableWidth = memoArea.clientWidth - paddingLeft - paddingRight;
-            
-            const fontSize = parseFloat(style.fontSize);
-            // 等幅フォントでは、半角は全角の約半分の幅
-            const fullCharWidth = fontSize;
-            const halfCharWidth = fontSize * 0.55; 
-
-            const lines = [];
-            let lineStart = 0;
-            let currentWidth = 0;
-
-            for (let i = 0; i < text.length; i++) {
-                if (text[i] === '\n') {
-                    lines.push({ start: lineStart, end: i });
-                    lineStart = i + 1;
-                    currentWidth = 0;
-                    continue;
-                }
-
-                const charWidth = isHalfWidth(text[i]) ? halfCharWidth : fullCharWidth;
-                
-                if (currentWidth + charWidth > availableWidth && currentWidth > 0) {
-                    lines.push({ start: lineStart, end: i });
-                    lineStart = i;
-                    currentWidth = charWidth;
-                } else {
-                    currentWidth += charWidth;
-                }
-            }
-            lines.push({ start: lineStart, end: text.length });
-            return { lines, fullCharWidth, halfCharWidth };
-        }
-
-        // 行の開始位置からカーソル位置までの「横幅ピクセル数」を計算
-        function getWidthUpToIndex(text, start, end, fullW, halfW) {
-            let w = 0;
-            for (let i = start; i < end; i++) {
-                w += isHalfWidth(text[i]) ? halfW : fullW;
-            }
-            return w;
-        }
-
-        // 目標の横幅に最も近いインデックスを探す
-        function getIndexFromWidth(text, start, end, targetWidth, fullW, halfW) {
-            let w = 0;
-            for (let i = start; i < end; i++) {
-                const cw = isHalfWidth(text[i]) ? halfW : fullW;
-                if (w + cw / 2 > targetWidth) return i; 
-                w += cw;
-            }
-            return end;
-        }
-
+        // ← (左へ1文字)
         document.getElementById('btnArrowLeft').addEventListener('click', () => {
             const start = memoArea.selectionStart;
             if (start > 0) memoArea.setSelectionRange(start - 1, start - 1);
             memoArea.focus();
         });
 
+        // → (右へ1文字)
         document.getElementById('btnArrowRight').addEventListener('click', () => {
             const end = memoArea.selectionEnd;
             if (end < memoArea.value.length) memoArea.setSelectionRange(end + 1, end + 1);
             memoArea.focus();
         });
 
-        document.getElementById('btnArrowUp').addEventListener('click', () => {
-            const text = memoArea.value;
-            const cursorPos = memoArea.selectionStart;
-            const info = getVisualLines(text);
-            
-            // 現在カーソルがいる仮想行を探す
-            let currentLineIndex = 0;
-            for (let i = 0; i < info.lines.length; i++) {
-                if (cursorPos >= info.lines[i].start && cursorPos <= info.lines[i].end) {
-                    currentLineIndex = i;
-                    // 行末の \n の直後にカーソルがある場合の微調整
-                    if (cursorPos === info.lines[i].start && i > 0 && text[cursorPos - 1] === '\n') {
-                        currentLineIndex = i - 1;
-                    }
-                    break;
-                }
-            }
-
-            if (currentLineIndex > 0) {
-                const currentLine = info.lines[currentLineIndex];
-                const prevLine = info.lines[currentLineIndex - 1];
-                
-                // 現在の行におけるカーソルのX座標を計算
-                const currentXOffset = getWidthUpToIndex(text, currentLine.start, cursorPos, info.fullCharWidth, info.halfCharWidth);
-                
-                // 前の行で同じX座標になるインデックスを取得
-                const newPos = getIndexFromWidth(text, prevLine.start, prevLine.end, currentXOffset, info.fullCharWidth, info.halfCharWidth);
-                memoArea.setSelectionRange(newPos, newPos);
-            } else {
-                memoArea.setSelectionRange(0, 0); // 先頭
-            }
+        // →→ (右へ5文字)
+        document.getElementById('btnJumpArrowRight').addEventListener('click', () => {
+            const end = memoArea.selectionEnd;
+            const newPos = Math.min(memoArea.value.length, end + 5);
+            memoArea.setSelectionRange(newPos, newPos);
             memoArea.focus();
         });
 
-        document.getElementById('btnArrowDown').addEventListener('click', () => {
-            const text = memoArea.value;
-            const cursorPos = memoArea.selectionStart;
-            const info = getVisualLines(text);
-            
-            let currentLineIndex = 0;
-            for (let i = 0; i < info.lines.length; i++) {
-                if (cursorPos >= info.lines[i].start && cursorPos <= info.lines[i].end) {
-                    currentLineIndex = i;
-                    if (cursorPos === info.lines[i].start && i > 0 && text[cursorPos - 1] === '\n') {
-                        currentLineIndex = i - 1;
-                    }
-                    break;
-                }
-            }
-
-            if (currentLineIndex < info.lines.length - 1) {
-                const currentLine = info.lines[currentLineIndex];
-                const nextLine = info.lines[currentLineIndex + 1];
-                
-                const currentXOffset = getWidthUpToIndex(text, currentLine.start, cursorPos, info.fullCharWidth, info.halfCharWidth);
-                
-                const newPos = getIndexFromWidth(text, nextLine.start, nextLine.end, currentXOffset, info.fullCharWidth, info.halfCharWidth);
-                memoArea.setSelectionRange(newPos, newPos);
-            } else {
-                memoArea.setSelectionRange(text.length, text.length); // 末尾
-            }
-            memoArea.focus();
-        });
+        // --- ▲ 矢印キーロジックここまで ▲ ---
 
         fontSizeSlider.addEventListener('input', (e) => {
             const size = e.target.value;
@@ -832,7 +759,6 @@
 
         function saveToLocal(type) {
             localStorage.setItem(`memo_save_toggle_${currentTab}`, saveToggle.checked);
-            
             if (type === 'text' || type === 'all') {
                 if (saveToggle.checked) {
                     localStorage.setItem(`memo_data_${currentTab}`, memoArea.value);
@@ -885,10 +811,34 @@
             }
         });
 
+        // --- PWA更新検知・適用ロジック ---
         if ('serviceWorker' in navigator) {
+            let refreshing = false;
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    window.location.reload();
+                    refreshing = true;
+                }
+            });
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
-                    console.log('ServiceWorker registered:', reg.scope);
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                const updateToast = document.getElementById('updateToast');
+                                const btnDoUpdate = document.getElementById('btnDoUpdate');
+                                updateToast.classList.add('show');
+                                
+                                btnDoUpdate.addEventListener('click', () => {
+                                    updateToast.classList.remove('show');
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                });
+                            }
+                        });
+                    });
                 }).catch(err => {
                     console.log('ServiceWorker registration failed:', err);
                 });
