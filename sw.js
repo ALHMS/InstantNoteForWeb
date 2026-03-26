@@ -1,5 +1,5 @@
-// ▼ バージョンを v23 に引き上げました ▼
-const CACHE_NAME = 'memo-app-v1.0.0';
+// ▼ バージョンを v1.1.0 に引き上げました ▼
+const CACHE_NAME = 'memo-app-v1.1.0';
 
 const urlsToCache = [
   './',
@@ -10,7 +10,12 @@ const urlsToCache = [
   './assets/trash.svg',
   './assets/copy.svg',
   './assets/paste.svg',
-  './assets/partial-select.svg'
+  './assets/partial-select.svg',
+  './assets/info.svg',
+  './assets/leftArrow.svg',
+  './assets/jumpLeftArrow.svg',
+  './assets/rightArrow.svg',
+  './assets/jumpRightArrow.svg'
 ];
 
 self.addEventListener('install', event => {
@@ -20,7 +25,6 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
   );
-  self.skipWaiting(); 
 });
 
 self.addEventListener('activate', event => {
@@ -46,4 +50,10 @@ self.addEventListener('fetch', event => {
         return response || fetch(event.request);
       })
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

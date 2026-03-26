@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>オフラインメモ</title>
     <link rel="manifest" href="manifest.json">
     <style>
@@ -161,6 +161,7 @@
             z-index: 20;
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
+            /* viewport-fit=cover により、この padding-bottom がPWAでも正しく機能します */
             padding-bottom: env(safe-area-inset-bottom);
             transition: opacity 0.25s ease-in-out;
             background-color: var(--bottom-toolbar-bg);
@@ -213,7 +214,6 @@
         button.tool-btn.danger { color: var(--btn-danger-color); }
         button.tool-btn.danger:active { background-color: rgba(255, 107, 107, 0.1); }
 
-        /* --- CSS Maskによるアイコン --- */
         .icon {
             display: inline-block;
             width: 20px;
@@ -234,7 +234,6 @@
         .icon-paste { -webkit-mask-image: url('assets/paste.svg'); mask-image: url('assets/paste.svg'); }
         .icon-partial-select { -webkit-mask-image: url('assets/partial-select.svg'); mask-image: url('assets/partial-select.svg'); }
         
-        /* ▼ 追加：新しいアイコン用のクラス ▼ */
         .icon-info { -webkit-mask-image: url('assets/info.svg'); mask-image: url('assets/info.svg'); }
         .icon-arrow-left { -webkit-mask-image: url('assets/leftArrow.svg'); mask-image: url('assets/leftArrow.svg'); }
         .icon-jump-arrow-left { -webkit-mask-image: url('assets/jumpLeftArrow.svg'); mask-image: url('assets/jumpLeftArrow.svg'); }
@@ -249,7 +248,10 @@
             padding-top: 10px;
             padding-left: 15px;
             padding-right: 15px;
-            font-family: 'Courier New', Consolas, Monaco, 'Osaka-等幅', 'ＭＳ ゴシック', monospace;
+            
+            /* ▼ 修正：デバイス設定（body）のフォントを引き継ぐように戻しました ▼ */
+            font-family: inherit;
+            
             border: none;
             outline: none;
             resize: none;
@@ -537,8 +539,9 @@
             if (e.target === modalOverlay) modalOverlay.classList.remove('show');
         });
 
+        // ▼ バージョン表記を v1.1.0 に更新 ▼
         document.getElementById('btnInfo').addEventListener('click', () => {
-            showModal("オフラインメモ", "バージョン: v1.0.0\n\n機能:\n・PWA自動更新通知\n・カスタムHTMLモーダル\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
+            showModal("オフラインメモ", "バージョン: v1.1.0\n\n機能:\n・PWAセーフエリア完全対応\n・PWA自動更新通知\n・カスタムHTMLモーダル\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
         });
 
         // --- テーマ切り替え ---
@@ -717,7 +720,7 @@
             memoArea.focus();
         });
 
-        // --- ▼ 修正：矢印キーロジック（1文字＆5文字ジャンプ） ▼ ---
+        // --- ▼ 矢印キーロジック（左右移動のみにスッキリ軽量化） ▼ ---
         
         // ←← (左へ5文字)
         document.getElementById('btnJumpArrowLeft').addEventListener('click', () => {
