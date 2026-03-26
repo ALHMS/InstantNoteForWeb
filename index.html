@@ -15,12 +15,15 @@
             --header-bg-color: #f8f9fa;
             --tab-bg: #e2e6ea;
             --tab-active-bg: #f8f9fa;
-            /* 透明度70% (不透明度30% = 0.3) */
             --bottom-toolbar-bg: rgba(248, 249, 250, 0.3);
             --btn-active-bg-color: rgba(0, 0, 0, 0.05);
             --btn-danger-color: #dc3545;
             --toast-bg-color: rgba(50, 50, 50, 0.9);
             --toast-text-color: #ffffff;
+            
+            /* モーダル用 */
+            --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+            --modal-bg: #ffffff;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -37,6 +40,9 @@
                 --btn-danger-color: #ff6b6b;
                 --toast-bg-color: rgba(230, 241, 255, 0.95);
                 --toast-text-color: #10171d;
+                
+                --modal-overlay-bg: rgba(0, 0, 0, 0.7);
+                --modal-bg: #161f27;
             }
         }
 
@@ -53,6 +59,8 @@
             --btn-danger-color: #dc3545;
             --toast-bg-color: rgba(50, 50, 50, 0.9);
             --toast-text-color: #ffffff;
+            --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+            --modal-bg: #ffffff;
         }
 
         body.force-dark {
@@ -68,6 +76,8 @@
             --btn-danger-color: #ff6b6b;
             --toast-bg-color: rgba(230, 241, 255, 0.95);
             --toast-text-color: #10171d;
+            --modal-overlay-bg: rgba(0, 0, 0, 0.7);
+            --modal-bg: #161f27;
         }
 
         /* --- 基本スタイル --- */
@@ -156,7 +166,6 @@
             justify-content: flex-start;
             padding-bottom: env(safe-area-inset-bottom);
             transition: opacity 0.25s ease-in-out;
-            /* 下部ツールバーにのみ半透明とブラーを適用 */
             background-color: var(--bottom-toolbar-bg);
             backdrop-filter: blur(1px);
             -webkit-backdrop-filter: blur(1px);
@@ -236,7 +245,6 @@
             position: absolute;
             left: 0;
             width: 100%;
-            /* 上部余白は固定、下部余白はJavaScriptで動的に付与します */
             padding-top: 10px;
             padding-left: 15px;
             padding-right: 15px;
@@ -273,6 +281,64 @@
         #toast.show { 
             opacity: 1;
             visibility: visible;
+        }
+
+        /* --- カスタムモーダル --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: var(--modal-overlay-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            background-color: var(--modal-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            width: 85%;
+            max-width: 340px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.95);
+            transition: transform 0.2s ease-out;
+            color: var(--text-color);
+        }
+        .modal-overlay.show .modal-box {
+            transform: scale(1);
+        }
+        .modal-title {
+            margin: 0 0 12px 0;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        .modal-body {
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            white-space: pre-wrap; /* 改行を反映 */
+        }
+        .modal-btn-wrap {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .modal-btn-close {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--btn-active-bg-color);
+            color: var(--text-color);
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -322,6 +388,16 @@
 
     <div id="toast"></div>
 
+    <div id="customModalOverlay" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <div id="modalBody" class="modal-body"></div>
+            <div class="modal-btn-wrap">
+                <button id="btnModalClose" class="modal-btn-close">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const memoArea = document.getElementById('memoArea');
         const saveToggle = document.getElementById('saveToggle');
@@ -332,6 +408,12 @@
         const topContainer = document.querySelector('.top-container');
         const tabs = document.querySelectorAll('.tab');
         
+        // モーダル要素
+        const modalOverlay = document.getElementById('customModalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const btnModalClose = document.getElementById('btnModalClose');
+
         let currentTab = 1;
         let tabData = {
             1: { history: [''], index: 0 },
@@ -340,14 +422,14 @@
         };
         let isProgrammaticChange = false;
 
-        // --- チャタリング防止：中身が少ない時はスクロール無効化 ---
+        // --- チャタリング防止 ---
         memoArea.addEventListener('touchmove', function(e) {
             if (memoArea.scrollHeight <= memoArea.clientHeight) {
                 e.preventDefault();
             }
         }, { passive: false });
 
-        // --- ▼ 修正：レイアウト追従（テキストエリアを裏側まで広げる） ▼ ---
+        // --- レイアウト追従 ---
         let adjustLayout = () => {};
 
         if (window.visualViewport) {
@@ -362,21 +444,16 @@
                 const topHeight = topContainer.offsetHeight || 80;
                 const tbHeight = bottomToolbar.offsetHeight || 45;
                 
-                // 1. 上部コンテナの配置
                 topContainer.style.top = `${viewTop}px`;
                 
-                // 2. 下部ツールバーの配置
                 const toolbarTop = viewTop + viewHeight - tbHeight;
                 bottomToolbar.style.top = `${toolbarTop}px`;
                 
-                // 3. テキストエリアの配置（裏側まで透けさせるため、高さは画面の底まで伸ばす）
                 memoArea.style.top = `${viewTop + topHeight}px`;
                 memoArea.style.height = `${viewHeight - topHeight}px`;
                 
-                // 4. その代わり、一番下までスクロールした時に文字がツールバーに隠れないようpadding-bottomをツールバーの高さ分広げる
                 memoArea.style.paddingBottom = `${tbHeight + 10}px`;
                 
-                // 5. トーストの位置
                 toast.style.top = `${toolbarTop - 60}px`;
             };
 
@@ -403,7 +480,7 @@
             setTimeout(adjustLayout, 100);
         }
 
-        // --- mousedownでのフォーカス外れ防止処理 ---
+        // --- mousedownフォーカス外れ防止 ---
         document.querySelectorAll('button.tool-btn, .tab, input[type="range"], input[type="checkbox"]').forEach(el => {
             el.addEventListener('mousedown', (e) => {
                 if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
@@ -412,11 +489,22 @@
             });
         });
 
-        document.getElementById('btnInfo').addEventListener('click', () => {
-            alert("オフラインメモ アプリ\nバージョン: v22\n\n機能:\n・トランスペアレント(すりガラス)修復\n・テーマ切替\n・チャタリング防止\n・完全Absoluteレイアウト");
+        // --- モーダル制御 ---
+        function showModal(title, text) {
+            modalTitle.textContent = title;
+            modalBody.textContent = text;
+            modalOverlay.classList.add('show');
+        }
+        btnModalClose.addEventListener('click', () => modalOverlay.classList.remove('show'));
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) modalOverlay.classList.remove('show');
         });
 
-        // --- テーマ切り替えロジック ---
+        document.getElementById('btnInfo').addEventListener('click', () => {
+            showModal("オフラインメモ", "バージョン: v23\n\n機能:\n・カスタムHTMLモーダル\n・半角/全角対応 高度なカーソル移動\n・テーマ切替\n・3タブ切替\n・自動保存\n・完全Absoluteレイアウト");
+        });
+
+        // --- テーマ切り替え ---
         function applyTheme(themeName) {
             document.body.classList.remove('force-light', 'force-dark');
             if (themeName) {
@@ -443,9 +531,7 @@
         });
 
         const savedTheme = localStorage.getItem('memo_theme');
-        if (savedTheme) {
-            applyTheme(savedTheme);
-        }
+        if (savedTheme) applyTheme(savedTheme);
 
         let toastTimer;
         function showToast(message) {
@@ -577,14 +663,13 @@
                 saveState();
                 showToast('ペーストしました');
             } catch (err) {
-                const guideMessage = 
-                    "クリップボードへのアクセスがブロックされています。\n\n" +
+                const guideMessage = "クリップボードへのアクセスがブロックされています。\n\n" +
                     "【設定の変更方法】\n" +
                     "1. アドレスバーのアイコンをタップ\n" +
                     "2. 「Webサイトの設定」や「権限」を開く\n" +
                     "3. クリップボードへのアクセスを「許可」に変更\n\n" +
                     "※設定を変更せずにペーストする場合は、テキストエリアを長押しして「ペースト」を選択してください。";
-                alert(guideMessage);
+                showModal("権限エラー", guideMessage);
                 if (isActive) memoArea.focus();
             }
         });
@@ -596,14 +681,71 @@
             memoArea.focus();
         });
 
-        // --- 矢印キーロジック ---
-        function getDynamicCharsPerLine() {
+        // --- ▼ 修正：半角/全角の文字幅をシミュレーションする超精度の行計算 ▼ ---
+        
+        // 文字が半角（幅が半分）かどうか判定する関数
+        function isHalfWidth(char) {
+            const code = char.charCodeAt(0);
+            // ASCII文字、半角カタカナを半角とみなす
+            return (code >= 0x0020 && code <= 0x007E) || (code >= 0xFF61 && code <= 0xFF9F);
+        }
+
+        // テキストを「画面幅ごとの仮想的な行」に分割する関数
+        function getVisualLines(text) {
             const style = window.getComputedStyle(memoArea);
             const paddingLeft = parseFloat(style.paddingLeft);
             const paddingRight = parseFloat(style.paddingRight);
             const availableWidth = memoArea.clientWidth - paddingLeft - paddingRight;
+            
             const fontSize = parseFloat(style.fontSize);
-            return Math.max(1, Math.floor(availableWidth / fontSize));
+            // 等幅フォントでは、半角は全角の約半分の幅
+            const fullCharWidth = fontSize;
+            const halfCharWidth = fontSize * 0.55; 
+
+            const lines = [];
+            let lineStart = 0;
+            let currentWidth = 0;
+
+            for (let i = 0; i < text.length; i++) {
+                if (text[i] === '\n') {
+                    lines.push({ start: lineStart, end: i });
+                    lineStart = i + 1;
+                    currentWidth = 0;
+                    continue;
+                }
+
+                const charWidth = isHalfWidth(text[i]) ? halfCharWidth : fullCharWidth;
+                
+                if (currentWidth + charWidth > availableWidth && currentWidth > 0) {
+                    lines.push({ start: lineStart, end: i });
+                    lineStart = i;
+                    currentWidth = charWidth;
+                } else {
+                    currentWidth += charWidth;
+                }
+            }
+            lines.push({ start: lineStart, end: text.length });
+            return { lines, fullCharWidth, halfCharWidth };
+        }
+
+        // 行の開始位置からカーソル位置までの「横幅ピクセル数」を計算
+        function getWidthUpToIndex(text, start, end, fullW, halfW) {
+            let w = 0;
+            for (let i = start; i < end; i++) {
+                w += isHalfWidth(text[i]) ? halfW : fullW;
+            }
+            return w;
+        }
+
+        // 目標の横幅に最も近いインデックスを探す
+        function getIndexFromWidth(text, start, end, targetWidth, fullW, halfW) {
+            let w = 0;
+            for (let i = start; i < end; i++) {
+                const cw = isHalfWidth(text[i]) ? halfW : fullW;
+                if (w + cw / 2 > targetWidth) return i; 
+                w += cw;
+            }
+            return end;
         }
 
         document.getElementById('btnArrowLeft').addEventListener('click', () => {
@@ -619,69 +761,65 @@
         });
 
         document.getElementById('btnArrowUp').addEventListener('click', () => {
-            const val = memoArea.value;
-            const start = memoArea.selectionStart;
-            const charsPerLine = getDynamicCharsPerLine();
+            const text = memoArea.value;
+            const cursorPos = memoArea.selectionStart;
+            const info = getVisualLines(text);
+            
+            // 現在カーソルがいる仮想行を探す
+            let currentLineIndex = 0;
+            for (let i = 0; i < info.lines.length; i++) {
+                if (cursorPos >= info.lines[i].start && cursorPos <= info.lines[i].end) {
+                    currentLineIndex = i;
+                    // 行末の \n の直後にカーソルがある場合の微調整
+                    if (cursorPos === info.lines[i].start && i > 0 && text[cursorPos - 1] === '\n') {
+                        currentLineIndex = i - 1;
+                    }
+                    break;
+                }
+            }
 
-            const prevNewline = val.lastIndexOf('\n', start - 1);
-            const logicalLineStart = prevNewline + 1;
-            const offsetInLogicalLine = start - logicalLineStart;
-
-            if (offsetInLogicalLine >= charsPerLine) {
-                const newPos = start - charsPerLine;
+            if (currentLineIndex > 0) {
+                const currentLine = info.lines[currentLineIndex];
+                const prevLine = info.lines[currentLineIndex - 1];
+                
+                // 現在の行におけるカーソルのX座標を計算
+                const currentXOffset = getWidthUpToIndex(text, currentLine.start, cursorPos, info.fullCharWidth, info.halfCharWidth);
+                
+                // 前の行で同じX座標になるインデックスを取得
+                const newPos = getIndexFromWidth(text, prevLine.start, prevLine.end, currentXOffset, info.fullCharWidth, info.halfCharWidth);
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                if (prevNewline >= 0) {
-                    const prevPrevNewline = val.lastIndexOf('\n', prevNewline - 1);
-                    const prevLogicalLineStart = prevPrevNewline + 1;
-                    const prevLogicalLineLength = prevNewline - prevLogicalLineStart;
-                    
-                    let lastVisualLineOffset = Math.floor(prevLogicalLineLength / charsPerLine) * charsPerLine;
-                    if (lastVisualLineOffset === prevLogicalLineLength && prevLogicalLineLength > 0) {
-                        lastVisualLineOffset -= charsPerLine;
-                    }
-                    
-                    const column = offsetInLogicalLine % charsPerLine;
-                    const newPos = prevLogicalLineStart + Math.min(lastVisualLineOffset + column, prevLogicalLineLength);
-                    memoArea.setSelectionRange(newPos, newPos);
-                } else {
-                    memoArea.setSelectionRange(0, 0);
-                }
+                memoArea.setSelectionRange(0, 0); // 先頭
             }
             memoArea.focus();
         });
 
         document.getElementById('btnArrowDown').addEventListener('click', () => {
-            const val = memoArea.value;
-            const start = memoArea.selectionStart;
-            const charsPerLine = getDynamicCharsPerLine();
+            const text = memoArea.value;
+            const cursorPos = memoArea.selectionStart;
+            const info = getVisualLines(text);
+            
+            let currentLineIndex = 0;
+            for (let i = 0; i < info.lines.length; i++) {
+                if (cursorPos >= info.lines[i].start && cursorPos <= info.lines[i].end) {
+                    currentLineIndex = i;
+                    if (cursorPos === info.lines[i].start && i > 0 && text[cursorPos - 1] === '\n') {
+                        currentLineIndex = i - 1;
+                    }
+                    break;
+                }
+            }
 
-            const prevNewline = val.lastIndexOf('\n', start - 1);
-            const logicalLineStart = prevNewline + 1;
-            const offsetInLogicalLine = start - logicalLineStart;
-
-            const nextNewline = val.indexOf('\n', start);
-            const actualNextNewline = nextNewline === -1 ? val.length : nextNewline;
-            const logicalLineLength = actualNextNewline - logicalLineStart;
-
-            const column = offsetInLogicalLine % charsPerLine;
-            const currentVisualLineStartOffset = offsetInLogicalLine - column;
-            const nextVisualLineStartOffset = currentVisualLineStartOffset + charsPerLine;
-
-            if (nextVisualLineStartOffset <= logicalLineLength) {
-                const newPos = logicalLineStart + Math.min(nextVisualLineStartOffset + column, logicalLineLength);
+            if (currentLineIndex < info.lines.length - 1) {
+                const currentLine = info.lines[currentLineIndex];
+                const nextLine = info.lines[currentLineIndex + 1];
+                
+                const currentXOffset = getWidthUpToIndex(text, currentLine.start, cursorPos, info.fullCharWidth, info.halfCharWidth);
+                
+                const newPos = getIndexFromWidth(text, nextLine.start, nextLine.end, currentXOffset, info.fullCharWidth, info.halfCharWidth);
                 memoArea.setSelectionRange(newPos, newPos);
             } else {
-                if (nextNewline !== -1) {
-                    const nextLogicalLineStart = nextNewline + 1;
-                    const nextNextNewline = val.indexOf('\n', nextLogicalLineStart);
-                    const nextLogicalLineLength = (nextNextNewline === -1 ? val.length : nextNextNewline) - nextLogicalLineStart;
-                    
-                    const newPos = nextLogicalLineStart + Math.min(column, nextLogicalLineLength);
-                    memoArea.setSelectionRange(newPos, newPos);
-                } else {
-                    memoArea.setSelectionRange(val.length, val.length);
-                }
+                memoArea.setSelectionRange(text.length, text.length); // 末尾
             }
             memoArea.focus();
         });
