@@ -1,5 +1,4 @@
-// ▼ バージョンを v1.1.1 に引き上げました ▼
-const CACHE_NAME = 'memo-app-v1.1.1';
+const CACHE_NAME = 'memo-app-v1.1.2';
 
 const urlsToCache = [
   './',
@@ -15,7 +14,8 @@ const urlsToCache = [
   './assets/leftArrow.svg',
   './assets/jumpLeftArrow.svg',
   './assets/rightArrow.svg',
-  './assets/jumpRightArrow.svg'
+  './assets/jumpRightArrow.svg',
+  './assets/InstantNote.png'
 ];
 
 self.addEventListener('install', event => {

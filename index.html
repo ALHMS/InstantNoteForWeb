@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>オフラインメモ</title>
+    
+    <link rel="apple-touch-icon" href="assets/InstantNote.png">
+    
     <link rel="manifest" href="manifest.json">
     <style>
         /* --- 変数定義 --- */
@@ -168,7 +171,6 @@
             -webkit-backdrop-filter: blur(1px);
         }
 
-        /* ▼ 修正：キーボード出現時（bodyにkeyboard-open付与）は下部余白を0にする ▼ */
         body.keyboard-open .bottom-toolbar {
             padding-bottom: 0;
         }
@@ -485,7 +487,7 @@
                 const viewHeight = vv.height;
                 const windowHeight = window.innerHeight;
                 
-                // ▼ 修正：キーボードが開いているか（画面が100px以上縮んでいるか）を判定 ▼
+                // キーボードが開いているか（画面が100px以上縮んでいるか）を判定
                 const isKeyboardOpen = (windowHeight - viewHeight) > 100;
                 if (isKeyboardOpen) {
                     document.body.classList.add('keyboard-open');
@@ -550,8 +552,9 @@
             if (e.target === modalOverlay) modalOverlay.classList.remove('show');
         });
 
+        // ▼ バージョン表記を v1.1.2 に更新 ▼
         document.getElementById('btnInfo').addEventListener('click', () => {
-            showModal("オフラインメモ", "バージョン: v1.1.1\n\n機能:\n・キーボード出現時のUI最適化\n・PWAセーフエリア完全対応\n・PWA自動更新通知\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
+            showModal("オフラインメモ", "バージョン: v1.1.2\n\n機能:\n・アプリアイコン変更対応\n・キーボード出現時のUI最適化\n・PWAセーフエリア完全対応\n・PWA自動更新通知\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
         });
 
         // --- テーマ切り替え ---
