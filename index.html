@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>オフラインメモ</title>
-    
     <link rel="apple-touch-icon" href="assets/InstantNote.png">
-    
     <link rel="manifest" href="manifest.json">
     <style>
         /* --- 変数定義 --- */
@@ -164,15 +162,18 @@
             z-index: 20;
             border-top: 1px solid var(--border-color);
             justify-content: flex-start;
-            padding-bottom: env(safe-area-inset-bottom);
-            transition: opacity 0.25s ease-in-out, padding-bottom 0.15s ease-out;
+            /* ▼ 修正：計算の干渉を防ぐため padding の transition を削除。常に最低8pxの余白を確保 ▼ */
+            padding-top: 8px;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+            transition: opacity 0.25s ease-in-out; 
             background-color: var(--bottom-toolbar-bg);
             backdrop-filter: blur(1px);
             -webkit-backdrop-filter: blur(1px);
         }
 
+        /* ▼ 修正：キーボード開時はセーフエリアを無効化し、固定で8pxの余白にする ▼ */
         body.keyboard-open .bottom-toolbar {
-            padding-bottom: 0;
+            padding-bottom: 8px;
         }
 
         .arrow-keys {
@@ -474,21 +475,29 @@
             }
         }, { passive: false });
 
-        // --- レイアウト追従 ---
+        // --- ▼ 修正：レイアウト追従（確実なキーボード判定と高さ取得） ▼ ---
         let adjustLayout = () => {};
 
         if (window.visualViewport) {
             let lastViewportHeight = window.visualViewport.height;
             let resizeTimer;
+            
+            // ロード時の画面高さを「キーボードが閉まっている時の最大高さ」として記憶
+            let maxViewHeight = window.visualViewport.height;
 
             adjustLayout = () => {
                 const vv = window.visualViewport;
                 const viewTop = vv.offsetTop;
                 const viewHeight = vv.height;
-                const windowHeight = window.innerHeight;
                 
-                // キーボードが開いているか（画面が100px以上縮んでいるか）を判定
-                const isKeyboardOpen = (windowHeight - viewHeight) > 100;
+                // 画面が回転した際などに最大高さを更新
+                if (viewHeight > maxViewHeight) {
+                    maxViewHeight = viewHeight;
+                }
+                
+                // 「記憶している最大高さ」から100px以上縮んでいたらキーボードオープンと判定
+                const isKeyboardOpen = (maxViewHeight - viewHeight) > 100;
+                
                 if (isKeyboardOpen) {
                     document.body.classList.add('keyboard-open');
                 } else {
@@ -496,7 +505,9 @@
                 }
                 
                 const topHeight = topContainer.offsetHeight || 80;
-                // paddingが変化するため、計算前に最新の高さを取得
+                
+                // CSSクラス（keyboard-open）が付与・剥奪された瞬間にパディングが即座に切り替わるため、
+                // ここで取得する offsetHeight は「正しいセーフエリアの有無」が反映された確実な値になります。
                 const tbHeight = bottomToolbar.offsetHeight || 45;
                 
                 topContainer.style.top = `${viewTop}px`;
@@ -552,9 +563,8 @@
             if (e.target === modalOverlay) modalOverlay.classList.remove('show');
         });
 
-        // ▼ バージョン表記を v1.1.2 に更新 ▼
         document.getElementById('btnInfo').addEventListener('click', () => {
-            showModal("オフラインメモ", "バージョン: v1.1.2\n\n機能:\n・アプリアイコン変更対応\n・キーボード出現時のUI最適化\n・PWAセーフエリア完全対応\n・PWA自動更新通知\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
+            showModal("オフラインメモ", "バージョン: v1.1.3\n\n機能:\n・キーボード開閉時のレイアウト干渉を完全修正\n・アプリアイコン変更対応\n・PWAセーフエリア完全対応\n・PWA自動更新通知\n・高速カーソル移動 (1文字/5文字)\n・テーマ切替\n・3タブ切替\n・完全Absoluteレイアウト");
         });
 
         // --- テーマ切り替え ---
